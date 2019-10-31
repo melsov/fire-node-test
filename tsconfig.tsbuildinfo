@@ -1,0 +1,443 @@
+{
+  "program": {
+    "fileInfos": {
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es6.d.ts": {
+        "version": "c180f01a2aaac7d733001fa1db20f881dc83cf33096b674a1546ca26762e69da",
+        "signature": "c180f01a2aaac7d733001fa1db20f881dc83cf33096b674a1546ca26762e69da"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es5.d.ts": {
+        "version": "c8665e66018917580e71792b91022bcaf53fb946fab4aaf8dfb0738ed564db88",
+        "signature": "c8665e66018917580e71792b91022bcaf53fb946fab4aaf8dfb0738ed564db88"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.d.ts": {
+        "version": "7994d44005046d1413ea31d046577cdda33b8b2470f30281fd9c8b3c99fe2d96",
+        "signature": "7994d44005046d1413ea31d046577cdda33b8b2470f30281fd9c8b3c99fe2d96"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2016.d.ts": {
+        "version": "5f217838d25704474d9ef93774f04164889169ca31475fe423a9de6758f058d1",
+        "signature": "5f217838d25704474d9ef93774f04164889169ca31475fe423a9de6758f058d1"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.d.ts": {
+        "version": "459097c7bdd88fc5731367e56591e4f465f2c9de81a35427a7bd473165c34743",
+        "signature": "459097c7bdd88fc5731367e56591e4f465f2c9de81a35427a7bd473165c34743"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.d.ts": {
+        "version": "6994c583b66862deca24d7bbf77297d95b9d3da8160dbd9beef6b847cf7c1376",
+        "signature": "6994c583b66862deca24d7bbf77297d95b9d3da8160dbd9beef6b847cf7c1376"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.iterable.d.ts": {
+        "version": "4c892766803cef795d73d69aee436dc7a80157163e0cf35e6d0e86917cbd42f3",
+        "signature": "4c892766803cef795d73d69aee436dc7a80157163e0cf35e6d0e86917cbd42f3"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.webworker.importscripts.d.ts": {
+        "version": "fe4e59403e34c7ff747abe4ff6abbc7718229556d7c1a5b93473fb53156c913b",
+        "signature": "fe4e59403e34c7ff747abe4ff6abbc7718229556d7c1a5b93473fb53156c913b"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.scripthost.d.ts": {
+        "version": "b9faa17292f17d2ad75e34fac77dd63a6403af1dba02d39cd0cbb9ffdf3de8b9",
+        "signature": "b9faa17292f17d2ad75e34fac77dd63a6403af1dba02d39cd0cbb9ffdf3de8b9"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.core.d.ts": {
+        "version": "384f66a3422d80014c51de2682159bb26f1e35854029880ccd5f6d1f00e6a36d",
+        "signature": "384f66a3422d80014c51de2682159bb26f1e35854029880ccd5f6d1f00e6a36d"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.collection.d.ts": {
+        "version": "dd94d8ef48c562389eb58af8df3a3a34d11367f7c818192aa5f16470d469e3f0",
+        "signature": "dd94d8ef48c562389eb58af8df3a3a34d11367f7c818192aa5f16470d469e3f0"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.generator.d.ts": {
+        "version": "828413486bdcaa342558e8e4570b1b287b776cb61b4b70b0214bd10c5d9a94c3",
+        "signature": "828413486bdcaa342558e8e4570b1b287b776cb61b4b70b0214bd10c5d9a94c3"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.iterable.d.ts": {
+        "version": "4d1f39313a169b8599b8817688f504b56ba8204c2ebafd03f66ff77ddb1899a4",
+        "signature": "4d1f39313a169b8599b8817688f504b56ba8204c2ebafd03f66ff77ddb1899a4"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.promise.d.ts": {
+        "version": "7c07d934680d0e33275a44d22fb11a4ff31d46c8c26a8d056828a478753f1efe",
+        "signature": "7c07d934680d0e33275a44d22fb11a4ff31d46c8c26a8d056828a478753f1efe"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.proxy.d.ts": {
+        "version": "5e72f949a89717db444e3bd9433468890068bb21a5638d8ab15a1359e05e54fe",
+        "signature": "5e72f949a89717db444e3bd9433468890068bb21a5638d8ab15a1359e05e54fe"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.reflect.d.ts": {
+        "version": "f5b242136ae9bfb1cc99a5971cccc44e99947ae6b5ef6fd8aa54b5ade553b976",
+        "signature": "f5b242136ae9bfb1cc99a5971cccc44e99947ae6b5ef6fd8aa54b5ade553b976"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.symbol.d.ts": {
+        "version": "9ae2860252d6b5f16e2026d8a2c2069db7b2a3295e98b6031d01337b96437230",
+        "signature": "9ae2860252d6b5f16e2026d8a2c2069db7b2a3295e98b6031d01337b96437230"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts": {
+        "version": "3e0a459888f32b42138d5a39f706ff2d55d500ab1031e0988b5568b0f67c2303",
+        "signature": "3e0a459888f32b42138d5a39f706ff2d55d500ab1031e0988b5568b0f67c2303"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2016.array.include.d.ts": {
+        "version": "3f96f1e570aedbd97bf818c246727151e873125d0512e4ae904330286c721bc0",
+        "signature": "3f96f1e570aedbd97bf818c246727151e873125d0512e4ae904330286c721bc0"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.object.d.ts": {
+        "version": "ff8ad203e83338289b0f5defc1a5b5c253fb7d251b464db497383f915a0df3f4",
+        "signature": "ff8ad203e83338289b0f5defc1a5b5c253fb7d251b464db497383f915a0df3f4"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts": {
+        "version": "b8667586a618c5cf64523d4e500ae39e781428abfb28f3de441fc66b56144b6f",
+        "signature": "b8667586a618c5cf64523d4e500ae39e781428abfb28f3de441fc66b56144b6f"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.string.d.ts": {
+        "version": "21df2e0059f14dcb4c3a0e125859f6b6ff01332ee24b0065a741d121250bc71c",
+        "signature": "21df2e0059f14dcb4c3a0e125859f6b6ff01332ee24b0065a741d121250bc71c"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.intl.d.ts": {
+        "version": "c1759cb171c7619af0d2234f2f8fb2a871ee88e956e2ed91bb61778e41f272c6",
+        "signature": "c1759cb171c7619af0d2234f2f8fb2a871ee88e956e2ed91bb61778e41f272c6"
+      },
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts": {
+        "version": "28569d59e07d4378cb3d54979c4c60f9f06305c9bb6999ffe6cab758957adc46",
+        "signature": "28569d59e07d4378cb3d54979c4c60f9f06305c9bb6999ffe6cab758957adc46"
+      },
+      "e:/dev/fire-node-test/node_modules/firebase/index.d.ts": {
+        "version": "0f2d2e5881cf24c41ff41681e911d362966a0363ef61cdacfb0856ca71fdf037",
+        "signature": "0f2d2e5881cf24c41ff41681e911d362966a0363ef61cdacfb0856ca71fdf037"
+      },
+      "e:/dev/fire-node-test/node_modules/firebase/empty-import.d.ts": {
+        "version": "5b6167f97499db9b0713e2ff824b487b8b0d9f96e03e7dea4bc9b601f4130540",
+        "signature": "5b6167f97499db9b0713e2ff824b487b8b0d9f96e03e7dea4bc9b601f4130540"
+      },
+      "e:/dev/fire-node-test/tsrc/index.ts": {
+        "version": "bb4a815694f3dae814379591812288f3e8749f42f44a70bb172977f2aaa7a9dc",
+        "signature": "e600117440a92e12b9ec884a6c4466de7f2f7743e23f6f020d480665ffb9dede"
+      },
+      "e:/dev/fire-node-test/node_modules/@types/node/inspector.d.ts": {
+        "version": "7e49dbf1543b3ee54853ade4c5e9fa460b6a4eca967efe6bf943e0c505d087ed",
+        "signature": "7e49dbf1543b3ee54853ade4c5e9fa460b6a4eca967efe6bf943e0c505d087ed"
+      },
+      "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts": {
+        "version": "3a41e316cfa27251a4065061ae169e32594ff3eebf851b8ffe8471fa58f86595",
+        "signature": "3a41e316cfa27251a4065061ae169e32594ff3eebf851b8ffe8471fa58f86595"
+      },
+      "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts": {
+        "version": "1de0ff6200b92798a5aef43f57029c79dbf69932037dee1c007fdd2c562db258",
+        "signature": "1de0ff6200b92798a5aef43f57029c79dbf69932037dee1c007fdd2c562db258"
+      },
+      "e:/dev/fire-node-test/node_modules/@types/long/index.d.ts": {
+        "version": "d32ef7739402db3a15640222d047f0044e8e9a09ee123d49e8f57f3c66c2a732",
+        "signature": "d32ef7739402db3a15640222d047f0044e8e9a09ee123d49e8f57f3c66c2a732"
+      },
+      "e:/dev/fire-node-test/node_modules/@types/bytebuffer/index.d.ts": {
+        "version": "9a271183da07858e3ccfaab9ce7dbe1e6dd9e670a9dc79df7550152f6726e29f",
+        "signature": "9a271183da07858e3ccfaab9ce7dbe1e6dd9e670a9dc79df7550152f6726e29f"
+      }
+    },
+    "options": {
+      "target": 2,
+      "module": 1,
+      "outDir": "E:/dev/fire-node-test/src",
+      "rootDir": "E:/dev/fire-node-test/tsrc",
+      "incremental": true,
+      "strict": true,
+      "moduleResolution": 2,
+      "esModuleInterop": true,
+      "configFilePath": "E:/dev/fire-node-test/tsconfig.json"
+    },
+    "referencedMap": {
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es6.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es5.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2016.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.iterable.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.webworker.importscripts.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.scripthost.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.core.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.collection.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.generator.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.iterable.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.promise.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.proxy.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.reflect.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.symbol.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2016.array.include.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.object.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.string.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.intl.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/firebase/index.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/firebase/empty-import.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/tsrc/index.ts": [
+        "e:/dev/fire-node-test/node_modules/firebase/index.d.ts",
+        "e:/dev/fire-node-test/node_modules/firebase/empty-import.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/node/inspector.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/inspector.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/long/index.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/bytebuffer/index.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/long/index.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts"
+      ]
+    },
+    "exportedModulesMap": {
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es6.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es5.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2016.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.iterable.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.webworker.importscripts.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.scripthost.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.core.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.collection.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.generator.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.iterable.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.promise.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.proxy.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.reflect.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.symbol.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2016.array.include.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.object.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.string.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.intl.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/firebase/index.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/firebase/empty-import.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/tsrc/index.ts": [
+        "e:/dev/fire-node-test/node_modules/firebase/empty-import.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/node/inspector.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/inspector.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/long/index.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts"
+      ],
+      "e:/dev/fire-node-test/node_modules/@types/bytebuffer/index.d.ts": [
+        "e:/dev/fire-node-test/node_modules/@types/long/index.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts",
+        "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts"
+      ]
+    },
+    "semanticDiagnosticsPerFile": [
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es6.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es5.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2016.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.dom.iterable.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.webworker.importscripts.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.scripthost.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.core.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.collection.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.generator.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.iterable.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.promise.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.proxy.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.reflect.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.symbol.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2016.array.include.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.object.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.string.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.intl.d.ts",
+      "c:/users/melsov/appdata/roaming/npm/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts",
+      "e:/dev/fire-node-test/node_modules/firebase/index.d.ts",
+      "e:/dev/fire-node-test/node_modules/firebase/empty-import.d.ts",
+      "e:/dev/fire-node-test/node_modules/@types/node/inspector.d.ts",
+      "e:/dev/fire-node-test/node_modules/@types/node/base.d.ts",
+      "e:/dev/fire-node-test/node_modules/@types/node/ts3.2/index.d.ts",
+      "e:/dev/fire-node-test/node_modules/@types/long/index.d.ts",
+      "e:/dev/fire-node-test/node_modules/@types/bytebuffer/index.d.ts",
+      "e:/dev/fire-node-test/tsrc/index.ts"
+    ]
+  },
+  "version": "3.4.5"
+}
