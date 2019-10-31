@@ -12,21 +12,19 @@ module.exports = (env, argv) => {
         OUT_DIR = "dist-node";
         ENTRY = "index.node.ts";
         TARGET = "node";
-        EXTERNALS = [nodeExternals()]; // TODO: OIMO CANNON for babylon
+        EXTERNALS = [nodeExternals()]; // TODO: OIMO CANNON for babylon?
     } else {
         OUT_DIR = "dist-browser";
         ENTRY = "index.browser.ts";
         TARGET = "web";
-        EXTERNALS = {}; // TODO: OIMO CANNON
+        EXTERNALS = {}; // TODO: OIMO CANNON?
     }
-    // want to exclude one set of files for node mode and another for browser mode
-    // but we can accomplish this by including the respective files 
-    // in either index.browser.ts or index.node.ts
+
     return ({
-        entry : './src/' + ENTRY, // index.ts',
+        entry : './src/' + ENTRY, 
         output : {
             filename: 'app.bundle.js',
-            path:path.resolve(__dirname, OUT_DIR) // 'lib')
+            path:path.resolve(__dirname, OUT_DIR) 
         },
         resolve: {
             extensions: ['.ts', '.js', '.json']
@@ -40,8 +38,8 @@ module.exports = (env, argv) => {
         },
         mode: 'development',
         // Apparently (see binyamin's medium article), we want to prevent webpack from bundling node modules when we build for node,
-        // and apparently, 'nodeExternals()' accomplishes this
-        externals: EXTERNALS,  // [nodeExternals()], 
+        // and, apparently, 'nodeExternals()' accomplishes this
+        externals: EXTERNALS,  
 
         // Firebase gave us some advice about making 'main' the first mainField in 'resolve', when we ran this in another project/config.
         // It doesn't seem to mind the default set up with this config.

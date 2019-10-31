@@ -21,6 +21,23 @@ document = DOM.window.document;
 location = window.location;
 HTMLElement = window.HTMLElement;
 
+// Start an express server
+// so that (for example) AssetManager requests work
+function FindAPortForGETServer() {
+  return 8000;
+}
+const express = require('express');
+const app = express();
+const PORT_EXPRESS = FindAPortForGETServer();
+app.get('/', (req, res) => { res.send('hi world'); });
+app.use(express.static('./'));
+
+app.listen(PORT_EXPRESS, () => {
+  console.log(`listening on ${PORT_EXPRESS}`);
+})
+
+
+
 // invoke game start
 const booferIndex = require('./boofer-files/index');
 
