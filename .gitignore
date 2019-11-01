@@ -65,6 +65,7 @@ node_modules/
 .env
 
 # MMP : output dirs
-dist-node/
+#dist-node/
+app.bundle.js
 dist-browser/
 lib/

@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+  <head>
+      <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+      <link rel="icon" type="image/png" href="favicon/favicon-32x32.png" sizes="32x32">
+      <link rel="icon" type="image/png" href="favicon/favicon-16x16.png" sizes="16x16">
+      <link rel="manifest" href="favicon/site.webmanifest">
+      <!-- <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"> -->
+      <meta name="theme-color" content="#ffffff">
+    <title>Getting Started</title>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            /* overflow: hidden; */
+        }
+
+        #render-canvas-server {
+            width: 100%;
+            height: 50%;
+            display: block;
+            font-size: 0;
+        }
+        #render-canvas-client-a {
+            width: 100%;
+            height: 50%;
+            top: 50%;
+            display: block;
+            font-size: 0;
+        }
+        canvas, #buttons {
+          position: absolute;
+          z-index: 1;
+        }
+        #debugPlayerList {
+          color: #ffffff;
+          font-family: sans-serif;
+        }
+        #debugPlayerCount {
+          color:aquamarine;
+          font-size: 1.5em;
+          font-family: sans-serif;
+        }
+        #debugIsServer {
+          color:cadetblue;
+          font-size: 1.6em;
+          font-family: sans-serif;
+        }
+        #cli-options-1
+          {
+            color: white;
+            position: absolute;
+            z-index: 24;
+            top: 1%;
+            right: 0%;
+          }
+          #ser-debug {
+            color: #00EE33;
+          }
+          #scroller {
+            font-size: 1.3em;
+            z-index: 30;
+          }
+          body {
+            background-color: #999999;
+            color: coral;
+          }
+          #lobby-container {
+            background-color: aliceblue;
+            z-index: 32;
+            position: absolute;
+            top: 5%;
+            left: 2%;
+            width: 500px;
+            height: 400px;
+          }
+          #load-out-container {
+            height: 60%;
+          }
+          #body-color-select select option {
+            height: 50px; width: 50px;
+          }
+
+          #indicators {
+            width: 60px;
+            height: 31px;
+          }
+          #dataChannelSendIndicator, #dataChannelReceiveIndicator {
+            height: 30px;
+            width: 30px;
+            float: left;
+          }
+
+          #lower-right {
+            z-index: 33;
+            float: right;
+            position: absolute;
+            bottom: 0px;
+            right: 5px;
+            width: 50px;
+            height: 40px;
+          }
+        
+
+    </style>
+  </head>
+  <body > 
+    <canvas id="render-canvas-server" touch-action="none"></canvas>
+    <canvas id="render-canvas-client-a" touch-action="none"></canvas>
+   
+    <div id='lobby-container' >
+      <div id='load-out-container'>
+        <div id='color-select' >
+          <select id='body-color-select' style="outline-color: salmon" >
+            
+              <option value='purple' ><div style="background-color: #990099; caret-color: #990099"> purple</div> </option>
+              <option value='yellow' ><div style="background-color: #e7e413; caret-color: #e7e413"> yellow</div> </option>
+          </select>
+        </div>
+
+      </div>
+
+      <div id="respawnCountdown" >respawn countdown</div>
+      <button id="button-enter-game" >Enter game</button>
+
+    </div>
+    <div id="buttons">
+        <div id="room-agent-srv-debug" >room-agent-srv-debug</div>
+        <div id="room-agent-cli-debug" >room-agent-cli-debug</div>
+        <div id="peer-debug" >peer-debug</div>
+        <div id="pre-game-debug" >pre-game-debug</div>
+        <!-- <button id="startButton">Start</button>
+      <button id="sendButton" disabled>Send</button>
+      <button id="closeButton" disabled>Stop</button> -->
+      <div id="indicators" >
+        <div id="dataChannelSendIndicator">S</div>
+        <div id="dataChannelReceiveIndicator">R</div>
+        .
+      </div>
+
+      <div id="debugPlayerCount"></div>
+      <div id="debugPlayerList"></div>
+      <div id="debugIsServer"></div>
+      <div id="ser-debug" ></div>
+
+
+      <p> Use MSPeer<input id="useMSPeer" type="checkbox">  </p>
+    </div>
+
+    <div id='cli-options-1'>
+      <p>
+        Server: 
+        ForcAbs: 
+        <input type='checkbox' id="forceAbsUpdate" />
+        Relvncy:
+        <input type='checkbox' id="Relevancy" />
+        <br />
+      cli-options: 
+        interp:
+      <input type="checkbox" id="interpolation" />
+      
+        reconcil:
+        <input type="checkbox" id="reconciliation" />
+      
+        predic:
+        <input type="checkbox" id="prediction" />
+
+        ignore server:        
+        <input type="checkbox" id="ignoreServer" />
+      </p>
+
+      <div id="status" > player status </div>
+      <div id="scroller" > annoucement scroller </div>
+    </div>
+
+    <div id="lower-right" >
+        <button id="kill-game" >KILL GAME</button>
+    </div>
+    
+<!--    
+    This page exists just to spoof debugging UI 
+    mechanisms. scripts are run from node
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="main.js" ></script> -->
+  </body>
+</html>

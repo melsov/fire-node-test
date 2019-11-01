@@ -1,0 +1,45 @@
+{
+    "entities" : 
+    [
+        {
+            "name" : "player",
+            "files" :
+            [
+                {
+                    "isMain" : "true",
+                    "path" : "./models/",
+                    "name" : "player.babylon",
+                    "actionSpecs" : 
+                    [
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "shotgun",
+            "files" :
+            [
+                {
+                    "isMain" : "true",
+                    "path" : "./models/weapons/",
+                    "name" : "shotgun.babylon",
+                    "actionSpecs" : 
+                    [
+                        {
+                            "fromFrame" : 0,
+                            "toFrame" : 100,
+                            "actionName" : "Reload",
+                            "timelineAudios" : [{ "keyName" : "shotgunreload", "offsetSeconds" : 0}]
+                        },
+                        {
+                            "fromFrame" : 101,
+                            "toFrame" : 120,
+                            "actionName" : "Fire",
+                            "timelineAudios" : [{ "keyName" : "shotgunfire", "offsetSeconds" : 0}]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

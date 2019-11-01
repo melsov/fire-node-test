@@ -36,9 +36,7 @@ app.listen(PORT_EXPRESS, () => {
   console.log(`listening on ${PORT_EXPRESS}`);
 })
 
-
-
-// invoke game start
+// game start
 const booferIndex = require('./boofer-files/index');
 
 //

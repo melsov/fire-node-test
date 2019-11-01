@@ -1,0 +1,10 @@
+  [
+    {
+        "name" : "shotgunimpact",
+        "particleTexture" : "./images/puff.png",
+        "minSize" : 0.5,
+        "maxSize" : 3,
+        "minLifeTime" : 3,
+        "maxLifeTime" : 5
+    }
+]

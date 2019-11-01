@@ -1,0 +1,67 @@
+{
+    "entities" : 
+    [
+        {
+            "name" : "pillar",
+            "files" :
+            [
+                {
+                    "isMain" : "true",
+                    "path" : "./models/",
+                    "name" : "pillar.babylon",
+                    "actionSpecs" : 
+                    [
+                        {
+                            "fromFrame" : 40,
+                            "toFrame" : 60,
+                            "actionName" : "Dane"
+                        },
+                        {
+                            "fromFrame" : 0,
+                            "toFrame" : 39,
+                            "actionName" : "Jump"
+                        }
+                    ]
+                },
+                {
+                    "path" : "./models/",
+                    "name" : "pillars-other-anim.babylon",
+                    "actionSpecs" : 
+                    [
+                        {
+                            "fromFrame" : 0,
+                            "toFrame" : 40,
+                            "actionName" : "Twist"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name" : "shotgun",
+            "files" :
+            [
+                {
+                    "isMain" : "true",
+                    "path" : "./models/weapons/",
+                    "name" : "shotgun.babylon",
+                    "actionSpecs" : 
+                    [
+                        {
+                            "fromFrame" : 0,
+                            "toFrame" : 100,
+                            "actionName" : "Reload",
+                            "timelineAudios" : [{ "keyName" : "shotgunreload", "offsetSeconds" : 0}]
+                        },
+                        {
+                            "fromFrame" : 101,
+                            "toFrame" : 120,
+                            "actionName" : "Fire",
+                            "timelineAudios" : [{ "keyName" : "shotgunfire", "offsetSeconds" : 0}]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
