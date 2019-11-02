@@ -286,7 +286,6 @@ export class MClient
 
     private sendLoadOutRequest() : void 
     {
-        //this.debugWaitThenSendLOTimer.tick(this.game.engine.getDeltaTime(), () => { 
 
         let lo = MLoadOut.DebugCreateLoadout(this.NoLongerMeaningfulClientNumber);
         if(!lo) { return; }
@@ -300,7 +299,6 @@ export class MClient
 
         this.send(strcmd);
         
-        //});
     }
 
     private debugUpdateMetronomePosLabel()

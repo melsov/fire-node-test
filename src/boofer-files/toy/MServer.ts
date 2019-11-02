@@ -31,6 +31,8 @@ import { MStateBuffer } from "./MStateBuffer";
 import { ShortNetId } from "./helpers/ShortNetId";
 import { ServerUpdate, WelcomePackage } from "./comm/CommTypes";
 import { UINumberSet } from "./html-gui/UINumberSet";
+import { MDetectNode } from "../../MDetectRunningInNode";
+import { MLocalPeer } from "../MPeer";
 
 
 const debugElem : HTMLDivElement = <HTMLDivElement> document.getElementById("debug");
@@ -66,6 +68,7 @@ class CliEntity
     public readonly pingGauge : MPingGauge = new MPingGauge();
     public roundTripMillis : number = LAG_MS_FAKE * 2;
     public didDisconnect : boolean = false;
+    public sendFailCount : number = 0;
     public confirmableMessageBook : MConfirmableMessageBook = new MConfirmableMessageBook();
 
     public loadOut : Nullable<MLoadOut> = null;
@@ -175,11 +178,10 @@ export class MServer
     private shortIdBook = new ShortNetId();
 
     constructor(
+        private peer : MLocalPeer,
         private game : GameMain
     )
     {
-        
-
         this.game.init();
         this.puppetMaster = new MPuppetMaster(this.game.mapPackage);
 
@@ -294,16 +296,21 @@ export class MServer
         console.log(`confirm welcome failed for ${keys.length} keys : user is : ${userID}`);
     }
 
+
+    // TODO: if node mode
+    // if no more players
+    // exit this process
     public disconnect(fuser : tfirebase.User) : void
     {
+        console.log(`DISCONNECT: ${fuser.UID}`);
         let cli = this.clients.getValue(fuser.UID);
-        if(cli != undefined){
+        if(cli !== undefined){
             cli.didDisconnect = true;
-        }
+        } 
+        else { console.log(`*** couldn't find a client to disconnect?? ${fuser.UID}`); }
 
-        
-        let ent = this.getPlayerEntityFromCurrentState(fuser.UID); //  this.currentState.lookup.getValue(fuser.UID);
-        if(ent != undefined)
+        let ent = this.getPlayerEntityFromCurrentState(fuser.UID); 
+        if(ent !== undefined)
         {
             ent.shouldDelete = true;
         }
@@ -840,6 +847,18 @@ export class MServer
 
     }
 
+
+    private sendToCliUpdateSendSuccess(cli : CliEntity, su : string) : void 
+    {
+        if(cli.remotePlayer.peer.send(su)) {
+            cli.sendFailCount = 0;
+            return;
+        }
+
+        cli.sendFailCount++;
+        console.log(`send fails for ${cli.remotePlayer.user.UID}: ${cli.sendFailCount}`);
+
+    }
     // ***TODO****: continuous ray to show potential hits
     // for (say) first player.
 
@@ -885,7 +904,7 @@ export class MServer
                     // TODO: Cli side problem mostly: when an other player becomes irrelevant for a bit and then relevant again,
                     // we see 'shaking' (looks like very spread out, weird, out of order interp data)
                     // the shaking only appears in a cli view of the other.
-                    // seems to go away, quickly or immediately, when abs updates are forced
+                    // seems to go away, quickly or immediately, when abs updates are forced.
                     // diagnose, fix
 
                     let su = new ServerUpdate(state, cli.lastProcessedInput);  
@@ -894,7 +913,8 @@ export class MServer
                     cli.confirmableMessageBook.addArray(this.confirmableBroadcasts);
                     su.confirmableMessages = cli.confirmableMessageBook.getUnconfirmedMessagesMoveToSent();
                     
-                    cli.remotePlayer.peer.send(ServerUpdate.Pack(su));
+                    this.sendToCliUpdateSendSuccess(cli, ServerUpdate.Pack(su));
+                    // cli.remotePlayer.peer.send(ServerUpdate.Pack(su));
 
                     this.debugDeltaUps.color = "#FFFF00";
                     this.debugDeltaUps.text = `AU cli.AckI: ${cli.lastAckIndex} from: ${state.deltaFromIndex} to: ${state.ackIndex}`;
@@ -919,7 +939,8 @@ export class MServer
                         cli.confirmableMessageBook.addArray(this.confirmableBroadcasts);
                         su.confirmableMessages = cli.confirmableMessageBook.getUnconfirmedMessagesMoveToSent();
 
-                        cli.remotePlayer.peer.send(ServerUpdate.Pack(su)); 
+                        // cli.remotePlayer.peer.send(ServerUpdate.Pack(su)); 
+                        this.sendToCliUpdateSendSuccess(cli, ServerUpdate.Pack(su));
 
                         if(this.debugWatchClaimPosCli === cli) {
                             let deltaUser = delta.lookup.getValue(user);
@@ -945,12 +966,45 @@ export class MServer
     {
         this.currentState.purgeDeleted(this.currentState);
 
-        let deletables = new Array<string> ();
-        this.clients.forEach((k : string, cli : CliEntity) => {
-            if(cli.didDisconnect) { deletables.push(k); }
-        });
-        for(let k in deletables) {
-            this.clients.remove(k);
+        this.purgeUnresponsiveClients();
+
+        let keys = this.clients.keys();
+        let previousCliCount = keys.length;
+        for(let i=0; i<keys.length; ++i) 
+        {
+            let cli = this.clients.getValue(keys[i]);
+            if(cli && cli.didDisconnect) {
+                this.clients.remove(keys[i]);
+            }
+        }
+
+        // should we leave?
+        if(previousCliCount > 0) {
+            this.checkNodeModeShouldExit();
+        }
+    }
+
+    private purgeUnresponsiveClients() : void
+    {
+        let keys = this.clients.keys();
+        for(let i=0; i<keys.length; ++i) 
+        {
+            let cli = this.clients.getValue(keys[i]);
+            if(cli && cli.sendFailCount > 25) {
+                cli.didDisconnect = true;
+            }
+        }
+    }
+
+    private checkNodeModeShouldExit() : void 
+    {
+        if(!MDetectNode.IsRunningInNode()) { return; }
+        if(this.clients.keys().length === 0) {
+            
+            console.log(`Server bids you adieu.`);
+            //this.peer.lsRoomAgent.onDisconnect();
+            // do the right thing to wipe the firebase record of the room entirely
+            process.exit();
         }
     }
 

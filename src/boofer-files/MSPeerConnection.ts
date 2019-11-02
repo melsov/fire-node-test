@@ -221,12 +221,14 @@ export class MSPeerConnection
 
 
 
-    public send(s : string) 
+    public send(s : string) : boolean
     {
         try 
         {
-            if(this.sendChannel.readyState === 'open')
+            if(this.sendChannel.readyState === 'open') {
                 this. sendChannel.send(s);
+                return true;
+            }
             else 
                 console.log(`won't send. readyState is: ${this.sendChannel.readyState}. unsent msg:  ${s}`)
         } 
@@ -234,6 +236,7 @@ export class MSPeerConnection
         {
             console.warn(`MSPEER send err: ${err.toString()}`);
         }
+        return false;
     }
 
 

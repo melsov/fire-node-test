@@ -8,7 +8,7 @@ import { AssetsManager, MeshAssetTask, Scene, TextFileAssetTask, BinaryFileAsset
 //
 // export namespace MMultiLoader
 // {
-    export var G_RUNNING_IN_NODE : boolean | undefined = undefined;
+    //export var G_RUNNING_IN_NODE : boolean | undefined = undefined;
 
     export class MNodeWorkAroundAM
     {
@@ -16,9 +16,11 @@ import { AssetsManager, MeshAssetTask, Scene, TextFileAssetTask, BinaryFileAsset
         private nodeMode : boolean = false;
         private serverUrl : string | undefined;
 
-        private static IsGlobalNodeFlagSet() : boolean{
-            return G_RUNNING_IN_NODE !== undefined && G_RUNNING_IN_NODE;
-        }
+        private static get  AssetsRootPath() : string { return "assets"; }
+
+        // private static IsGlobalNodeFlagSet() : boolean{
+        //     return G_RUNNING_IN_NODE !== undefined && G_RUNNING_IN_NODE;
+        // }
 
         constructor(
             scene : Scene,
@@ -66,15 +68,20 @@ import { AssetsManager, MeshAssetTask, Scene, TextFileAssetTask, BinaryFileAsset
             return this.am.load();
         }
 
+        static AddAssetRootToPath(path : string) : string {
+            return `${MNodeWorkAroundAM.AssetsRootPath}/${path}`;
+        }
+
         private FormatURL(url : string) : string
         {
             // if 'node-mode' add server url to path type urls
+            let fullPath = MNodeWorkAroundAM.AddAssetRootToPath(url);
             if(this.nodeMode) {
                 if(url.indexOf('http') !== 0) {
-                    return `${this.serverUrl}/${url}`;
+                    return `${this.serverUrl}/${fullPath}`;
                 }
             }
-            return url;
+            return fullPath;
         }
     }
 // }

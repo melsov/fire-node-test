@@ -3,6 +3,7 @@ import { GridMaterial } from 'babylonjs-materials';
 import * as Gui from 'babylonjs-gui';
 import * as MLoader from './bab/MAssetBook';
 import { MDetectNode } from '../../MDetectRunningInNode';
+import { MNodeWorkAroundAM } from './loading/MMultiLoader';
 
 //import * as wrtc from './WebRTCConnection';
 //import {RoomAgent} from './RoomAgent';
@@ -148,7 +149,7 @@ export class GameMain
         }, this.scene);
 
         let chmat = new StandardMaterial('chmat', this.scene);
-        chmat.diffuseTexture = new Texture("./images/crosshair.png", this.scene);
+        chmat.diffuseTexture = new Texture(MNodeWorkAroundAM.AddAssetRootToPath( "./images/crosshair.png"), this.scene);
         chmat.diffuseTexture.hasAlpha = true;
         chmat.backFaceCulling = false;
         chplane.material = chmat;

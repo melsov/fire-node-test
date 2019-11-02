@@ -101,7 +101,7 @@ export class MLocalPeer
 
     private createServer(game : GameMain) 
     {
-        this.server = new MServer(game);
+        this.server = new MServer(this, game);
 
         this.lsRoomAgent.onChannelOpened = (rP : RemotePlayer) => {
             this.debugStopWatch.logLap('lsRoomAgent onChanOpen');

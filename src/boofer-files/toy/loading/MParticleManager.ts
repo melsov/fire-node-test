@@ -3,6 +3,7 @@ import { MParticleType } from "../manager/MParticleType";
 import { Dictionary, PriorityQueue } from "typescript-collections";
 import * as MLoader from "../bab/MAssetBook";
 import { MUtils } from "../Util/MUtils";
+import { MNodeWorkAroundAM } from "./MMultiLoader";
 
 class EmitterBall
 {
@@ -74,7 +75,7 @@ export class MParticleManager
     {
         let ps = new ParticleSystem(jPS.name, jPS.capacity ? jPS.capacity : 200, this.mapPackage.scene);
         if(jPS.particleTexture) {
-            let tex = new Texture(jPS.particleTexture, this.mapPackage.scene);
+            let tex = new Texture(MNodeWorkAroundAM.AddAssetRootToPath(jPS.particleTexture), this.mapPackage.scene);
             ps.particleTexture = tex;
         }
         ps.minSize = jPS.minSize;

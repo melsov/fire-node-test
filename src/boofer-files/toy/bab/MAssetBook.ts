@@ -138,7 +138,7 @@ import * as MDetectNode from "../../../MDetectRunningInNode";
         private static TextureFromJSON(jTex : any, scene : Scene) : Texture | undefined
         {
             // console.log(`got tex URL: ${jTex.url}. for name: ${jTex.name}`);
-            let tex = new Texture(jTex.url, scene);
+            let tex = new Texture(MMultiLoader.MNodeWorkAroundAM.AddAssetRootToPath(jTex.url), scene);
             tex.name = jTex.name;
             return tex;
         }
