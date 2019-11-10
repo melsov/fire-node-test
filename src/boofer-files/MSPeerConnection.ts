@@ -13,7 +13,6 @@
 import * as firebase from 'firebase/app';
 import 'firebase/database';
 import 'firebase/auth';
-// import { tfirebase } from './MPlayer';
 import * as tfirebase from './tfirebase';
 
 type tReceiveCallback = (uid : string, e: MessageEvent) => void;

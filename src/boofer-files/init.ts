@@ -53,17 +53,15 @@ let localClientPeerListenServer : MLocalPeer;
 
 var fbaseUser : tfirebase.User;
 
-const useMSPeer = <HTMLInputElement> document.getElementById("useMSPeer");
 var _wantListenServer : boolean = false;
 
 const killGameButton = <HTMLButtonElement> document.getElementById("kill-game");
 
+
+
 export function init()
 {
-    useMSPeer.checked = true; // force
-    if(useMSPeer.checked) {
-        SetupClient();
-    } 
+    SetupClient();
 }
 
 
@@ -105,13 +103,16 @@ function EnterLobby()
         }
     });
 
-    const closeDown = () => {
+    const closeDown = (callback ? : () => void) => {
         // if we don't await. does this always happen?
         console.log(`close down func`);
-        localPeer.onClose();
-        if(localClientPeerListenServer !== undefined) {
-            localClientPeerListenServer.onClose();
-        }
+        localPeer.onClose(() => {
+            if(localClientPeerListenServer !== undefined) {
+                localClientPeerListenServer.onClose(() => { if(callback) callback(); });
+                return;
+            } 
+            if(callback) callback();
+        });
     }
 
     if(!MDetectNode.IsRunningInNode())
@@ -124,7 +125,17 @@ function EnterLobby()
             console.log(`kill game clicked`);
             closeDown();
         }
+    } 
+    else // is running node 
+    {   
+        process.on('SIGINT', () => {
+            console.log(`interrupt signal`);
+            closeDown(() => {
+                process.exit();
+            });
+        });
     }
+    
 }
 
 var readyCount = 0;

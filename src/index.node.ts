@@ -1,3 +1,9 @@
+// require firebase here?
+// import * as firebase from 'firebase/app';
+// import 'firebase/auth';
+// let nothing = firebase.firestore;
+// console.log(`${nothing}`);
+
 // Node definitions
 global.XMLHttpRequest = require('xhr2').XMLHttpRequest; 
  
@@ -16,6 +22,7 @@ const DOM = new JSDOM(idxhtml, {
 });
 
 // cheese: define win, doc, loc, HTMLElement
+// WANT
 window = DOM.window;
 document = DOM.window.document;
 location = window.location;

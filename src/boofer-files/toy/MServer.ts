@@ -978,7 +978,7 @@ export class MServer
             }
         }
 
-        // should we leave?
+        // should we shutdown entirely?
         if(previousCliCount > 0) {
             this.checkNodeModeShouldExit();
         }
@@ -990,7 +990,7 @@ export class MServer
         for(let i=0; i<keys.length; ++i) 
         {
             let cli = this.clients.getValue(keys[i]);
-            if(cli && cli.sendFailCount > 25) {
+            if(cli && cli.sendFailCount > 100) {
                 cli.didDisconnect = true;
             }
         }

@@ -42,7 +42,8 @@
     "bundle": "npm run bundle:node && npm run bundle:browser",
     "start:node": "start /max cmd /K \"cd /d E:\\dev\\fire-node-test\\fire-node-test\\dist-node && node app.bundle.js \"",
     "local-chrome": "start chrome http://localhost:5000 /auto-open-devtools-for-tabs /new-window",
-    "start": "npm run bundle && npm run start:node"
+    "start": "npm run bundle && npm run start:node",
+    "bundle-start:node": "npm run bundle:node && cd /d E:\\dev\\fire-node-test\\fire-node-test\\dist-node && node app.bundle.js"
   },
   "keywords": [],
   "author": "",

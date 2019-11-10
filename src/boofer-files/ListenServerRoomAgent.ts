@@ -1,8 +1,9 @@
 import * as firebase from 'firebase/app';
 import 'firebase/database';
+// import 'firebase/firestore';
 import 'firebase/auth';
 
-import {MSPeerConnection} from './MSPeerConnection';
+import { MSPeerConnection } from './MSPeerConnection';
 import { RemotePlayer }  from './MPlayer';
 import * as tfirebase from './tfirebase';
 import { UILabel } from './toy/html-gui/UILabel';
@@ -34,7 +35,6 @@ export class ListenServerRoomAgent
     private inboxRefFor(_userid : string) : string {
         return `${this.roomRef}/inbox/${_userid}`;
     }
-    
 
     private debugLabelSrv = new UILabel("room-agent-srv-debug", "#33FFFF", undefined, "RmAgS:");
     private debugLabelCli = new UILabel("room-agent-cli-debug", "#AAFFDD", undefined, "RmAgC:");
@@ -57,6 +57,8 @@ export class ListenServerRoomAgent
     private debugIsServer : NodeFriendlyDivElement;
 
     userDBRef : firebase.database.ThenableReference;
+    // userDBRef : Promise<firebase.firestore.DocumentReference>;
+
     
     others : Array<RemotePlayer> = new Array<RemotePlayer>();
     readyOthers : Array<RemotePlayer> = new Array<RemotePlayer>(); // awkward // TODO: make both of these maps <uid, RemotePlayer> https://howtodoinjava.com/typescript/maps/
@@ -91,12 +93,20 @@ export class ListenServerRoomAgent
         this.debugPlayerListDiv.innerHTML = names.toString();
     }
 
+    private debugUseFireStore() 
+    {
+        // console.log(`use firestore see if this crashes`);
+        // let db = firebase.firestore();
+        // let playersDoc = db.collection("nothing").doc("also-nothing").set({ "still-nothing" : "nothing" });
+    }
+
     constructor(
         public readonly room : string, 
         public readonly user : tfirebase.User, 
         public  onGotPlayerCount : (isServer : boolean) => void
     ) 
     {
+        this.debugUseFireStore();
         if(this.user == undefined) { console.warn("THIS user (passed to RoomAgent constructor) is undefined"); throw new Error("user undefined"); }
     
         this.debugPlayerListDiv = new NodeFriendlyDivElement(document.getElementById('debugPlayerList'));
@@ -104,11 +114,11 @@ export class ListenServerRoomAgent
         this.debugIsServer = new NodeFriendlyDivElement( document.getElementById('debugIsServer'));
 
         // push our user to players
+        // this.userDBRef = firebase.firestore().collection(this.playersRef).add(this.user);
         this.userDBRef = firebase.database().ref(this.playersRef).push(this.user); 
         
-        this.userDBRef.then(() => {
-            console.log("here's the key: " + this.userDBRef.key);
-        });
+        //this.userDBRef.then((doc) => { console.log("here's the doc.id: " + doc.id); });
+        this.userDBRef.then(() => { console.log("here's the key: " + this.userDBRef.key); });
     }
     
     public init()
@@ -294,7 +304,7 @@ export class ListenServerRoomAgent
     }
 
     // clean up
-    public onDisconnect() 
+    public onDisconnect(callback : () => void) 
     {
         this.others.forEach((other) => {
             other.peer.closeDataChannels();
@@ -303,7 +313,7 @@ export class ListenServerRoomAgent
         // Looks like this doesn't entirely execute when
         // the window closes (sometimes).
         // Try batching???
-        
+        // 
         firebase.database().ref(this.roomCountRef).transaction((count) => { 
             if(!count || count === 0) { // hope not
                 console.log(`count already null or zero? ${count}`);
@@ -315,18 +325,28 @@ export class ListenServerRoomAgent
             return count - 1;
         }).then((count ) => {
             console.log(`success decrementing count. count now: ${count ? count : "undef"}`);
+
+            firebase.database().ref(this.inboxRefFor(this.user.UID)).remove()
+            .then(() => {
+
+                if(this.userDBRef.key)
+                    firebase.database().ref(this.playersRef + "/" + this.userDBRef.key).remove()
+                    .then(() => { 
+                        
+                        console.log("removed: " + this.userDBRef.key); 
+                        callback();
+                    });
+                else {
+                    console.warn("our room ref was undefined");
+                    callback();
+                }
+            });
+
         }).catch((reason) => {
             console.log(`decrement room count failed: ${reason}`);
+            callback();
         });
 
-        firebase.database().ref(this.inboxRefFor(this.user.UID)).remove()
-            .then(() => {});
-
-        if(this.userDBRef.key)
-            firebase.database().ref(this.playersRef + "/" + this.userDBRef.key).remove()
-                .then(() => { console.log("removed: " + this.userDBRef.key); });
-        else 
-            console.warn("our room ref was undefined");
-
+        
     }
 }

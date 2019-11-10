@@ -12,7 +12,19 @@ module.exports = (env, argv) => {
         OUT_DIR = "dist-node";
         ENTRY = "index.node.ts";
         TARGET = "node";
-        EXTERNALS = [nodeExternals()]; // TODO: OIMO CANNON for babylon?
+        EXTERNALS = [nodeExternals( 
+            // desperate attempt: DO bundle firestore??
+            // A LITTLE STORY: when we include firestore (which we want to do),
+            // proto_buf module throws an error: 'Not supported', 'isNode' fails even though we really are running in node.
+            // possibly proto_buf is getting fooled because we redefine window (in index.node.ts) ?? 
+                // SIDE NOTE: (which we must do, we're pretty sure, to make babylonjs happy 
+                // OR do we only need window because the node version of the app shares code that prints debug messages on the webpage. We may as well try to purge DOM references 
+                // from our node code...but babylonjs still definitely at least needs HTMLElement to be defined).
+            // ANYWAY: Whitelisting /firestore/ does solve the 'not supported' thing BUT leads to another error:
+            // `Discarding enity body for GET requests`. (probably from xhr2)
+            // So, for now, we are going back to using firebase's realtime db instead of firestore
+            // { whitelist: [/firestore/] }
+            )]; // TODO: OIMO CANNON for babylon?
     } else {
         OUT_DIR = "dist-browser";
         ENTRY = "index.browser.ts";

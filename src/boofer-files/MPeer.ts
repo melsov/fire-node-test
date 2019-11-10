@@ -12,6 +12,7 @@ import { UILabel } from './toy/html-gui/UILabel';
 import { MStopWatch } from './toy/Util/MStopWatch';
 import { MUtils } from './toy/Util/MUtils';
 import { MDetectNode } from '../MDetectRunningInNode';
+import { callbackify } from 'util';
 
 
 //
@@ -32,6 +33,9 @@ export class MLocalPeer
 
     private debugRandomId : string;
 
+    // TODO / DESIGN NOTE: 
+    // With match maker service, we will already know whether we're the server
+    // at constructor invocation
     constructor(
         room : string,
         user : tfirebase.User,
@@ -51,7 +55,10 @@ export class MLocalPeer
         });
 
         // TESTING CONVENIENCE: preemptively wipe the ENTIRE DB! 
-        // so that this peer can be the first to arrive, be the server like its supposed to be
+        // so that this peer can be the first to arrive and be the server like its supposed to be
+        // DEEP THOUGHT: server creation and room creation should go hand-in-hand more...
+        // so that we can't have a serverless room
+        // server can't leave without destroying its room, etc.
         if(MDetectNode.IsRunningInNode())
         {
             this.lsRoomAgent.debugWipeEntireFirebaseDB(() => {
@@ -143,9 +150,11 @@ export class MLocalPeer
         // }
     }
 
-    public onClose() : void 
+    public onClose(callback : () => void) : void 
     {
-        this.lsRoomAgent.onDisconnect();
+        this.lsRoomAgent.onDisconnect(() => {
+            callback();
+        });
     }
 }
 
