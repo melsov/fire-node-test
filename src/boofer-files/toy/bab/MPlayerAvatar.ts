@@ -126,7 +126,7 @@ export class MPlayerAvatar implements Puppet
         let w = this.arsenal.equipped();
         w.meshSet.main.parent = this.weaponRoot;
         // TODO: if cli owned. attach to camera
-    }
+    } 
 
     setupClientPlayer(camRoot : Camera) : void 
     {
@@ -483,7 +483,7 @@ export class MPlayerAvatar implements Puppet
     private pickTerrain(mesh : AbstractMesh) : boolean
     {
         if(!mesh.isPickable)
-                return false;
+            return false;
         let tgs = Tags.GetTags(mesh);
         return typeof(tgs) === 'string' && tgs.indexOf(GameEntityTags.Terrain) >= 0;
     }

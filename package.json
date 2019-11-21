@@ -39,6 +39,7 @@
     "build:js": "babel src --out-dir lib --extensions \".ts,.tsx\" --source-maps inline",
     "bundle:node": "webpack --config webpack.config.js --env node-mode",
     "bundle:browser": "webpack --config webpack.config.js --env browser-mode",
+    "bundle-run:tests": "webpack --config webpack.config.js --env build-tests && node ./dist-tests/app.bundle.js",
     "bundle": "npm run bundle:node && npm run bundle:browser",
     "start:node": "start /max cmd /K \"cd /d E:\\dev\\fire-node-test\\fire-node-test\\dist-node && node app.bundle.js \"",
     "local-chrome": "start chrome http://localhost:5000 /auto-open-devtools-for-tabs /new-window",

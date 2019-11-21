@@ -34,7 +34,7 @@ function CloneFrom(cm : any) : Nullable<MAbstractConfirmableMessage>
 {
     switch(cm.ctype) {
         case ConfirmableType.Announcement:
-            return new MAnnouncement(cm.announcementText);
+            return new MAnnouncement(cm.announcementText, cm.id);
         case ConfirmableType.PlayerReentry:
             return new MPlayerReentry(cm.announcementText, cm.netId, cm.loadOut, BHelpers.Vec3FromJSON(cm.spawnPos));
         case ConfirmableType.ExitDeath:
@@ -48,12 +48,19 @@ export class MAnnouncement extends MAbstractConfirmableMessage
 {
     public hashcode(): number { return MUtils.StringToHash(this.announcementText); }
 
+    // needed since we're producing duplicate messages.
+    // client ui can use to distinguish between duplicates and 
+    // genuine new messages with the same text
+    public readonly id : number;  
     
     constructor(
-        public announcementText : string 
+        public announcementText : string,
+        id ? : number 
     ) 
     {
         super(ConfirmableType.Announcement);
+
+        this.id = id ? id : this.id = Math.floor(Math.random()*1000);
     }
     
 }
@@ -204,7 +211,6 @@ export class MConfirmableMessageBook
 
     private confirm(hash : number) : void
     {
-        //this.book.remove(hash);
         this.sent.remove(hash);
     }
 

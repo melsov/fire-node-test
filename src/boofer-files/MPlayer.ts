@@ -8,7 +8,7 @@ import {MSPeerConnection} from './MSPeerConnection';
 
 import * as firebase from 'firebase/app';
 import 'firebase/auth';
-import * as tfirebase from "./tfirebase";
+import * as tfirebase from "../shared/tfirebase";
 
 
 
@@ -49,7 +49,7 @@ export class MPlayer
 {
     public mesh : Mesh;
     constructor(
-        public readonly user : tfirebase.User, 
+        public readonly user : tfirebase.FBUser, 
         protected scene : Scene
     ) 
     {
@@ -73,7 +73,7 @@ export class RemotePlayer // extends MPlayer
 {
     constructor(
         public peer : MSPeerConnection,
-        public user : tfirebase.User,
+        public user : tfirebase.FBUser,
     )
     {
 

@@ -90,6 +90,7 @@ import * as MDetectNode from "../../../MDetectRunningInNode";
         // readonly map : Loadable = new Loadable(folderModels, "relevant.babylon"); // want
         readonly shotgun : Loadable = new Loadable(folderWeapons, "shotgun.babylon");
         readonly player : Loadable = new Loadable(`${folderModels}`, "player.babylon");
+        readonly ammoPickup : Loadable = new Loadable(folderWeapons, "ammo-pickup.babylon");
         // readonly pillarDebug : Loadable = new Loadable(`${folderModels}`, "pillar.babylon");
     }
     
@@ -252,7 +253,7 @@ import * as MDetectNode from "../../../MDetectRunningInNode";
         // add the associated mesh task...
         // 
         // ANNOYING SIDE NOTE:
-            // This (at the moment) sort of steps on the toes of meshLoadables.
+            // This steps on the toes of meshLoadables.
             // For now...any enity in the MEntityBabListLookup must also have a key in the mesh loadables list 
             // (in other words, the file spec file's entity names must be a subset of the loadable mesh keys.)
             // Why duplicate this list of entities? Because we like having the MeshFiles as a singleton class 

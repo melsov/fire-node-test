@@ -16,7 +16,7 @@ import { MProjectileHitInfo } from "./bab/NetworkEntity/transient/MProjectileHit
 import { MTickTimer } from "./Util/MTickTimer";
 import { MPingGauge } from "./ping/MPingGauge";
 import { RemotePlayer } from "../MPlayer";
-import * as tfirebase from "../tfirebase";
+import * as tfirebase from "../../shared/tfirebase";
 import {  MAnnounce } from "./bab/MAnnouncement";
 import { MConfirmableMessageBook, MAnnouncement, MAbstractConfirmableMessage, MPlayerReentry, MExitDeath } from "./helpers/MConfirmableMessage";
 import { LagQueue } from "./helpers/LagQueue";
@@ -136,7 +136,7 @@ export class MServer
 
     private lastTime : number = 0;
 
-    private debugHud : DebugHud = new DebugHud('ser-debug');
+    private debugHud = new UILabel('ser-debug-hud');
 
 
     // private clients : Collections.Dictionary<tfirebase.User, CliEntity> = new Collections.Dictionary<tfirebase.User, CliEntity>(tfirebase.StringForUser);
@@ -223,6 +223,8 @@ export class MServer
         console.log(`got connect from ${remotePlayer.user.UID}`);
         let user = remotePlayer.user;
         let cli = new CliEntity(remotePlayer);
+        // CONFUSING: clients are mapped to UID
+        // players are mapped to shortId
         this.clients.setValue(user.UID, cli);
 
         if(!this.debugWatchClaimPosCli)
@@ -297,10 +299,7 @@ export class MServer
     }
 
 
-    // TODO: if node mode
-    // if no more players
-    // exit this process
-    public disconnect(fuser : tfirebase.User) : void
+    public disconnect(fuser : tfirebase.FBUser) : void
     {
         console.log(`DISCONNECT: ${fuser.UID}`);
         let cli = this.clients.getValue(fuser.UID);
@@ -316,7 +315,6 @@ export class MServer
         }
 
         this.shortIdBook.remove(fuser.UID);
-
     }
 
     public begin() : void
@@ -700,8 +698,14 @@ export class MServer
 
     private findClient(netId : string) : Nullable<CliEntity>
     {
-        let cli = this.clients.getValue(netId);
-        if (cli === undefined) return null;
+        let longId = this.shortIdBook.getLongId(netId);
+        if(!longId) {
+            throw new Error(`no longId for ${netId}`);
+        } 
+        let cli = this.clients.getValue(longId);
+        if (cli === undefined) {
+            throw new Error(`no cli for ${longId}`);
+        } 
         return cli;
     }
 
@@ -779,13 +783,14 @@ export class MServer
             let pl = <MNetworkPlayerEntity>(<unknown> mnet);
             let cli = this.findClient(pl.netId);
             if(cli) {
-                str += ` ${user}: ping: ${cli.pingGauge.average.toFixed(2)} ${(mnet.shouldDelete ? "D" : "")} / `;
+                str += ` ${user.length < 6 ? user : user.substr(-6)}: health: ${pl.health.val} ping: ${cli.pingGauge.average.toFixed(2)} ${(mnet.shouldDelete ? "D" : "")} / `;
                 str += cli.pingGauge.debugStr;
             }
         });
 
+        if(str.length === 0) {str = 'no cli info'; }
 
-        this.debugHud.show(str);
+        this.debugHud.text = str;
     }
 
     public static DebugGetRewindConfig() : DebugRewindConfig

@@ -13,7 +13,7 @@
 import * as firebase from 'firebase/app';
 import 'firebase/database';
 import 'firebase/auth';
-import * as tfirebase from './tfirebase';
+import * as tfirebase from '../shared/tfirebase';
 
 type tReceiveCallback = (uid : string, e: MessageEvent) => void;
 type tReadyCallback = (readyState : RTCDataChannelState) => void;
@@ -48,11 +48,11 @@ export class MSPeerConnection
     receiveChannel : RTCDataChannel | null = null;
 
 
-    public readonly user : tfirebase.User;
+    public readonly user : tfirebase.FBUser;
     get yourId() : string {
         return this.user.UID;
     } 
-
+ 
     theirId : string;
     messageBoothPath : string;
 
@@ -69,7 +69,7 @@ export class MSPeerConnection
     SendChanStateChangedCallback : tChannelStateCallback = function(rS : RTCDataChannelState, peer : MSPeerConnection) {};
     ReceiveChanStateChangedCallback : tChannelStateCallback = function(rs : RTCDataChannelState, peer : MSPeerConnection) {};
     
-    constructor(_user : tfirebase.User, _theirId : string, _messageBoothPath : string) 
+    constructor(_user : tfirebase.FBUser, _theirId : string, _messageBoothPath : string) 
     {
         this.user = _user;
         this.theirId = _theirId;

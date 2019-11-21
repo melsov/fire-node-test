@@ -101,7 +101,8 @@ export abstract class MNetworkEntity
 
 export enum EntityType
 {
-    PLAYER = 1
+    PLAYER = 1,
+    PICKUP = 2
 }
 
 
@@ -185,10 +186,10 @@ export class InterpData
     }
 
     // region Float16Array
-    private writeToFloatArray(fsrView : any, offset : number) : void
+    private writeToFloatArray(floatArray : any, offset : number) : void
     {
-        MUtils.WriteVecToFloatArray(fsrView, this.position, offset);
-        MUtils.WriteVecToFloatArray(fsrView, this.rotation, offset + 3);
+        MUtils.WriteVecToFloatArray(floatArray, this.position, offset);
+        MUtils.WriteVecToFloatArray(floatArray, this.rotation, offset + 3);
     }
 
     private static FromFloatArray(ftrView : any, offset : number) : InterpData
@@ -276,10 +277,8 @@ export class OtherPlayerInterpolation
 
 export class CliTarget
 {
-    // public position : Vector3 = new Vector3();
     interpData : InterpData = new InterpData();
     public timestamp : number = 0;
-   
 
     clone() : CliTarget
     {
@@ -682,8 +681,6 @@ export class MNetworkPlayerEntity extends MNetworkEntity
     //
     // interpolation 
     //
-
-
     pushInterpolationBuffer(debugAckIndex : number) : void 
     {
         this.interpBuffer.push(new OtherPlayerInterpolation(this.lastAuthoritativeState.clone(), +new Date(), debugAckIndex));

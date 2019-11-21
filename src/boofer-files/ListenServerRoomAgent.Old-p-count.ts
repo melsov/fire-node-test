@@ -1,7 +1,7 @@
 import * as firebase from 'firebase/app';
 import 'firebase/database';
+// import 'firebase/firestore';
 import 'firebase/auth';
-import 'firebase/functions';
 
 import { MSPeerConnection } from './MSPeerConnection';
 import { RemotePlayer }  from './MPlayer';
@@ -13,7 +13,8 @@ import { MDetectNode } from '../MDetectRunningInNode';
 const RABaseRoomKey : string = "rooms";
 const RAMaxPlayersPerRoom : Number = 8;
 
-// TODO: MServer curates pl count based on responsiveness of clients
+// TODO: use cloud firestore instead of the legacy database
+
 export class ListenServerRoomAgent 
 {
     
@@ -35,14 +36,6 @@ export class ListenServerRoomAgent
         return `${this.roomRef}/inbox/${_userid}`;
     }
 
-    private toThemInboxRef(theirId : string) : string {
-        return `${this.roomRef}/inbox/${theirId}/${this.user.UID}`;
-    }
-
-    // private fromThemInboxRef(theirId : string) : string {
-    //     return `${this.roomRef}/inbox/${this.user.UID}/${theirId}`;
-    // }
-
     private debugLabelSrv = new UILabel("room-agent-srv-debug", "#33FFFF", undefined, "RmAgS:");
     private debugLabelCli = new UILabel("room-agent-cli-debug", "#AAFFDD", undefined, "RmAgC:");
 
@@ -53,8 +46,7 @@ export class ListenServerRoomAgent
         else if (this.user.isServer) {
             this.debugLabelSrv.text = t;
             console.log(t);
-        } 
-        else {
+        } else {
             this.debugLabelCli.text = t;
             console.log(t);
         }
@@ -64,8 +56,7 @@ export class ListenServerRoomAgent
     private debugPlayerCount : NodeFriendlyDivElement; // HTMLDivElement;
     private debugIsServer : NodeFriendlyDivElement;
 
-    // userDBRef : firebase.database.ThenableReference;
-    userDBRef : firebase.database.Reference; 
+    userDBRef : firebase.database.ThenableReference;
     // userDBRef : Promise<firebase.firestore.DocumentReference>;
 
     
@@ -112,6 +103,7 @@ export class ListenServerRoomAgent
     constructor(
         public readonly room : string, 
         public readonly user : tfirebase.FBUser, 
+        public readonly shouldBeServer : boolean,
         public  onGotPlayerCount : (isServer : boolean) => void
     ) 
     {
@@ -121,12 +113,11 @@ export class ListenServerRoomAgent
         this.debugPlayerCount = new NodeFriendlyDivElement(document.getElementById('debugPlayerCount'));
         this.debugIsServer = new NodeFriendlyDivElement( document.getElementById('debugIsServer'));
 
+
         // push our user to players
-        // this.userDBRef = firebase.database().ref(this.playersRef).push(this.user); 
-        this.userDBRef = firebase.database().ref(`${this.playersRef}/${this.user.UID}`);
-        this.userDBRef.set(this.user).then(() => { console.log("the keyy: " + this.userDBRef.key)});
+        this.userDBRef = firebase.database().ref(this.playersRef).push(this.user); 
         
-        // this.userDBRef.then(() => { console.log("here's the key: " + this.userDBRef.key); });
+        this.userDBRef.then(() => { console.log("here's the key: " + this.userDBRef.key); });
     }
     
     public init()
@@ -143,27 +134,23 @@ export class ListenServerRoomAgent
             // so don't init anything based on the value of count here. (e.g. don't call 'onGotPlayerCount')
             this.debugIsServer.innerText = (count === null || count === 0) ? `Server` : `Client ${count}`;
 
-            // don't set isServer based on count
-            // trust that user.isServer is already correct
-            // this.user.isServer = !count || count === 0; <--DON"T WANT
+            this.user.isServer = !count || count === 0;
 
             this.debugPlayerArrivalNumber = count ? count : 0;
 
-            this.dLabel = `transaction: count: ${count}. ${this.user.isServer? 'SRV' : 'CLI'}`;
+            this.dLabel = `transaction: count: ${count}. ${this.user.isServer?'SRV' : 'CLI'}`;
 
             return count + 1;
 
         }).then(() => {
             
-            // // // NO NEED TO
-            // // set user again (now with isServer)
-            // this.userDBRef.set(this.user, (err : Error | null) => { 
-            //     if(err) console.log(`${err}`); 
-            //     this.dLabel = `userDBRef set err: ${err? err : 'null err object'}`;
-            //     return null; 
-            // })
-            // .then(() => 
-            {
+            // set user again (now with isServer)
+            this.userDBRef.set(this.user, (err : Error | null) => { 
+                if(err) console.log(`${err}`); 
+                this.dLabel = `userDBRef set err: ${err? err : 'null err object'}`;
+                return null; 
+            })
+            .then(() => {
                 
                 this.onGotPlayerCount(this.user.isServer);
                 this.dLabel = `after set user again`;
@@ -174,7 +161,7 @@ export class ListenServerRoomAgent
 
                     this.dLabel = (`on roomCount: ${snap.val()}`)
 
-                    // clean up if we are the last one out of the room ?
+                    //clean up if we are the last one out of the room ?
                     // if(snap.val() === 0) {
                     //     firebase.database().ref(this.roomCountRef).remove();
                     // } // WANT? DON'T SEEM TO NEED
@@ -183,8 +170,7 @@ export class ListenServerRoomAgent
 
                 // this.handshake();
 
-            }
-            //); // end of set isServer
+            }); // end of set isServer
         }); // end of count transaction .then()
 
     }
@@ -250,55 +236,44 @@ export class ListenServerRoomAgent
         }; // END ADD_PEER
 
         // say 'hi' to the server, if we're not the server: 
-        // TODO: save reads: check that we're not the server here
-        if(!this.user.isServer) 
-        {
-            firebase.database().ref(this.playersRef).once('value')
-            .then(snap => {
-                
-                // foreach player listed under players
-                snap.forEach((child) => {
-                    let rUserConfig = <tfirebase.FBUser>(<unknown> child.val());
+        firebase.database().ref(this.playersRef).once('value')
+        .then(snap => {
+            
+            let debugFoundServer = 0;
+            // foreach player listed under players
+            snap.forEach((child) => {
+                let rUserConfig = <tfirebase.FBUser>(<unknown> child.val());
 
-                    if(rUserConfig.UID === undefined) console.warn("got an undefined user");
+                if(rUserConfig.UID == undefined) console.warn("got an undefined user");
 
-                    if(rUserConfig.isServer) // only notify the server
+                if(rUserConfig.isServer) // only notify the server
+                {
+                    if(rUserConfig.UID !== undefined && rUserConfig.UID !== this.user.UID)
                     {
-                        if(rUserConfig.UID !== undefined && rUserConfig.UID !== this.user.UID) // and I'm not the server (redundant)
-                        {
-                            this.dLabel = `will add peer`
+                        this.dLabel = `will add peer`
 
-                            addPeer(rUserConfig); 
-
-                            firebase.database().ref(this.toThemInboxRef(rUserConfig.UID)).set(this.user)
-                            .then(() => {
-                                firebase.database().ref(this.toThemInboxRef(rUserConfig.UID)).remove(); // remove immediately
-                            })
-                            .catch(err => {
-                                console.warn(`err message server inbox: path: ${this.toThemInboxRef(rUserConfig.UID)}. ${err}`);
-                            })
-                        }
-                        
+                        addPeer(rUserConfig); 
+                        firebase.database().ref(this.inboxRefFor(rUserConfig.UID)).push(this.user); 
                     }
-                
-                });
+                    
+                }
+               
             });
-        }
+        });
 
+        // NOTE: should we be calling this inside of a then?
         // if we're the server...now that we're in the game / room
         // listen for messages from new players ('child-added') in our 'in-box'
-        // NOTE: should we be calling this inside of a then?
-        if(this.user.isServer)
-        {
-            firebase.database().ref(this.inboxRefFor(this.user.UID)).on('child_added', (data) => {
-               
+        firebase.database().ref(this.inboxRefFor(this.user.UID)).on('child_added', (data) => {
+            if(this.user.isServer)
+            {
                 let rUserConfig = <tfirebase.FBUser>(<unknown> data.val());
                 console.log("from my inbox: " + data.val()+ " user: " + rUserConfig.UID);
 
                 var index : number = addPeer(rUserConfig);
                 this.others[index].peer.createConnection();
-            });
-        }
+            }
+        });
 
         // listen for players leaving
         firebase.database().ref(this.playersRef).on('child_removed', (data) => {
@@ -328,15 +303,13 @@ export class ListenServerRoomAgent
         });
     }
 
-    
-
     // clean up
-    tearDown()  //synchronouse method. no need for a callback
+    public onDisconnect(callback : () => void) 
     {
         this.others.forEach((other) => {
             other.peer.closeDataChannels();
         });
-/*
+
         // Looks like this doesn't entirely execute when
         // the window closes (sometimes).
         // Try batching???
@@ -347,16 +320,14 @@ export class ListenServerRoomAgent
                 //throw `what the heck? we're still here but count was: ${count}`;
                 return null;
             } 
-            if(count === 1) return null;
+            if(count === 1) 
+                return null;
             return count - 1;
         }).then((count ) => {
             console.log(`success decrementing count. count now: ${count ? count : "undef"}`);
 
-            // actually, only the server has an inbox
-            // we'll remove that (and, indeed, the entire room) elsewhere
-            // firebase.database().ref(this.inboxRefFor(this.user.UID)).remove() 
-            // .then(() => 
-            {
+            firebase.database().ref(this.inboxRefFor(this.user.UID)).remove()
+            .then(() => {
 
                 if(this.userDBRef.key)
                     firebase.database().ref(this.playersRef + "/" + this.userDBRef.key).remove()
@@ -369,14 +340,13 @@ export class ListenServerRoomAgent
                     console.warn("our room ref was undefined");
                     callback();
                 }
-            }
-            // );
+            });
 
         }).catch((reason) => {
             console.log(`decrement room count failed: ${reason}`);
             callback();
         });
-*/
+
         
     }
 }

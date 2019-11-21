@@ -12,7 +12,7 @@ import { MPlayerAvatar } from "./bab/MPlayerAvatar";
 import { CheckboxUI } from "./html-gui/CheckboxUI";
 import { MUtils } from "./Util/MUtils";
 import { MTickTimer } from "./Util/MTickTimer"; 
-import * as tfirebase from "../tfirebase";
+import * as tfirebase from "../../shared/tfirebase";
 import * as Collections from 'typescript-collections';
 import { ClientControlledPlayerEntity } from "./bab/NetworkEntity/ClientControlledPlayerEntity";
 import { FPSCam } from "./bab/FPSCam";
@@ -132,7 +132,7 @@ export class MClient
     // will contain its in game (say) two byte handle
     // 
     constructor(
-        public readonly user : tfirebase.User,
+        public readonly user : tfirebase.FBUser,
         public readonly game : GameMain,
         welcomePackage : WelcomePackage,
         debugPlayerArrivalNumber : number,
@@ -381,12 +381,13 @@ export class MClient
         //     console.log(`go wrong place ${this.playerEntity.position}`);
         // }
 
-        if(command.debugTriggerKey) {
-            if(this.fpsCam.offset.lengthSquared() > .00001) {
-                this.fpsCam.offset = Vector3.Zero();
-            } else {
-                this.fpsCam.offset = new Vector3(0, 3, -3);
-            }
+        if(command.debugTriggerKey) 
+        {
+            // if(this.fpsCam.offset.lengthSquared() > .00001) {
+            //     this.fpsCam.offset = Vector3.Zero();
+            // } else {
+            //     this.fpsCam.offset = new Vector3(0, 3, -3);
+            // }
         }
         
         //TODO: instead send the pos before prediction is applied

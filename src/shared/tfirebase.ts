@@ -1,3 +1,9 @@
+// *************************************
+// Copied to the fire-node-test project
+// DONT edit in that project; only edit if you're
+// in abfrab-func5
+//
+
 // Test user class: stand-in for 
 // the actual firebase.User class.
 // because firebase auth gives the 
@@ -5,9 +11,9 @@
 // and we want to test different users 
 // without having to use multiple browsers
 
-export function StringForUser(user : User) { return user.UID; }
+export function StringForUser(user : FBUser) { return user.UID; }
 
-export class User 
+export class FBUser 
 {
 
     public isServer : boolean = false;
@@ -22,9 +28,9 @@ export class User
         return `tF.User: ${this.UID}, name: ${this.displayName}, color: ${this.color}`;
     }
 
-    public clone() : User 
+    public clone() : FBUser 
     {
-        let c = new User(this.UID, this.displayName, this.color);
+        let c = new FBUser(this.UID, this.displayName, this.color);
         c.isServer = this.isServer;
         return c;
     }

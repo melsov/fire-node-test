@@ -5,7 +5,7 @@ import 'firebase/auth';
 
 import { MSPeerConnection } from './MSPeerConnection';
 import { RemotePlayer }  from './MPlayer';
-import * as tfirebase from './tfirebase';
+import * as tfirebase from '../shared/tfirebase';
 import { UILabel } from './toy/html-gui/UILabel';
 import { NodeFriendlyDivElement } from './toy/html-gui/NodeFriendlyElement';
 import { MDetectNode } from '../MDetectRunningInNode';
@@ -97,7 +97,7 @@ export class ListenServerRoomAgent
 
     constructor(
         public readonly room : string, 
-        public readonly user : tfirebase.User, 
+        public readonly user : tfirebase.FBUser, 
         public  onGotPlayerCount : (isServer : boolean) => void
     ) 
     {
@@ -212,7 +212,7 @@ export class ListenServerRoomAgent
     public handshake() : void
     {
         console.log(`welcome to lsroomAgent handshake()`);
-        const addPeer = (rUserConfig : tfirebase.User) => { 
+        const addPeer = (rUserConfig : tfirebase.FBUser) => { 
             console.log(`^^WELCOME TO addPeer! ${this.user.isServer ? "IM THE SERVER" : "IM A CLI"} ^^`);
             console.log(`remote user config: ${rUserConfig.displayName} color: ${rUserConfig.color}`);
 
@@ -277,7 +277,7 @@ export class ListenServerRoomAgent
                 {
                     this.dLabel = `will add peer`;
                     console.log(`cli found server ${JSON.stringify(doc.data())}`);
-                    addPeer(<tfirebase.User> doc.data());
+                    addPeer(<tfirebase.FBUser> doc.data());
                     this.inboxCollectionFor(doc.data().UID).doc(this.user.UID).set(Object.assign({}, this.user));
                 }
             })
@@ -319,7 +319,7 @@ export class ListenServerRoomAgent
                 snapshot.docChanges().forEach((change) => {
                     if(change.type === "added") 
                     {
-                        let rUserConfig = <tfirebase.User>(<unknown> change.doc.data()); // data.val());
+                        let rUserConfig = <tfirebase.FBUser>(<unknown> change.doc.data()); // data.val());
                         console.log("from my inbox: " + change.doc.data()+ " user: " + rUserConfig.UID);
                         var index : number = addPeer(rUserConfig);
                         this.others[index].peer.createConnection();

@@ -13,6 +13,10 @@ export class DebugHud
             _container.id = divID;
         } 
         this.container = _container;
+
+        //test
+        this.show("hi from debug hud");
+        console.log("***DBUGHUD****");
     }
 
     show(str : string) { this.container.innerText = str; }

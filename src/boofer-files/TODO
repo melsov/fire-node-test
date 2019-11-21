@@ -44,3 +44,9 @@ test running from an ec2
 setup custom stun/turn server? or get a service
 
 a touch / tap interface: (game seems to run on my old iphone) <-- use JQuery PEP + Bab: https://doc.babylonjs.com/how_to/interactions
+
+resolve firebase firestore crashing because (we think) we redefine 'window' in the node version of the app
+
+
+// Thought: server migration. It can happen frequently ish...might help guard against cheating...
+// Servers constructors can download world state?

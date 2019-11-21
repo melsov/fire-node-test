@@ -1,6 +1,6 @@
 import { ListenServerRoomAgent } from './ListenServerRoomAgent';
 import { RemotePlayer } from './MPlayer';
-import * as tfirebase from './tfirebase';
+import * as tfirebase from '../shared/tfirebase';
 import { Nullable, Color3 } from 'babylonjs';
 import  {MClient} from './toy/MClient';
 import  {MServer} from './toy/MServer';
@@ -13,6 +13,7 @@ import { MStopWatch } from './toy/Util/MStopWatch';
 import { MUtils } from './toy/Util/MUtils';
 import { MDetectNode } from '../MDetectRunningInNode';
 import { callbackify } from 'util';
+import { GoodbyeData } from '../shared/GoodbyeData';
 
 
 //
@@ -38,7 +39,8 @@ export class MLocalPeer
     // at constructor invocation
     constructor(
         room : string,
-        user : tfirebase.User,
+        user : tfirebase.FBUser,
+        private readonly idToken : string,
         //public mapPackage : Nullable<MLoader.MapPackage>,
         private statusCallback : (isServer : boolean) => void,
     )
@@ -150,11 +152,26 @@ export class MLocalPeer
         // }
     }
 
-    public onClose(callback : () => void) : void 
+    public onClose() : void 
     {
-        this.lsRoomAgent.onDisconnect(() => {
-            callback();
-        });
+        this.exitBeacon();
+        this.lsRoomAgent.tearDown();
+    }
+
+    private exitBeacon()
+    {
+        console.log(`will call goodbye func`);
+        console.log(`sending id token ${this.idToken}`);
+        let goodbye = new GoodbyeData();
+        goodbye.token = this.idToken;
+        goodbye.debugUIDWithExtras = this.lsRoomAgent.user.UID;
+        goodbye.isServer = this.server !== undefined; 
+        let sendData = JSON.stringify(goodbye);
+        // CONSIDER: can we send beacon twice?
+        // TODO: if node mode
+        // send an http req. the normal way?
+        // probably can't use sendBeacon
+        navigator.sendBeacon('https://us-central1-webrtcrelay2.cloudfunctions.net/signalGoodbyeHttp', sendData); 
     }
 }
 

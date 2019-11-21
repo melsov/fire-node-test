@@ -23,6 +23,15 @@ export class ShortNetId
         return this.LongToShort.getValue(longNetId); 
     }
 
+    getLongId(shortId : string) : string | undefined {
+        let keys = this.LongToShort.keys();
+        for(let i=0; i<keys.length; ++i) {
+            let short = this.LongToShort.getValue(keys[i]);
+            if(shortId === short) { return keys[i]; }
+        }
+        return undefined;
+    }
+
     getShortIdUnsafe(longNetId : string) : string { return <string> this.LongToShort.getValue(longNetId); }
 
     remove(longNetId : string) : void

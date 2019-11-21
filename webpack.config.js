@@ -25,7 +25,14 @@ module.exports = (env, argv) => {
             // So, for now, we are going back to using firebase's realtime db instead of firestore
             // { whitelist: [/firestore/] }
             )]; // TODO: OIMO CANNON for babylon?
-    } else {
+    } 
+    else if(argv.env === 'build-tests') {
+        OUT_DIR = "dist-tests";
+        ENTRY = "test/RunTests.ts";
+        TARGET = "node";
+        EXTERNALS = [nodeExternals()];
+    }
+    else {
         OUT_DIR = "dist-browser";
         ENTRY = "index.browser.ts";
         TARGET = "web";

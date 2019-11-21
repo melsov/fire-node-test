@@ -36,9 +36,18 @@ export class MMessageBoard
 
     maxMessages : number = 8;
 
+    mergeDuplicates : boolean = true;
+
     private readonly messages : Array<MAnnouncement> = new Array<MAnnouncement>();
 
     add(ann : MAnnouncement, dontUpdateDisplay ? : boolean) {
+
+        if(this.mergeDuplicates && this.messages.length > 0) {
+            if(this.messages[this.messages.length - 1].id === ann.id &&
+                 this.messages[this.messages.length - 1].announcementText === ann.announcementText) {
+                return;
+            }
+        }
         this.messages.push(ann);
         if(this.messages.length >= this.maxMessages) this.messages.shift();
 
@@ -49,7 +58,6 @@ export class MMessageBoard
 
     push(anns : Array<MAnnouncement> | undefined) : void
     {
-
         if(anns === undefined) { return; }
         
         for(let i=0; i<anns.length; ++i) { 
@@ -57,7 +65,6 @@ export class MMessageBoard
         }
 
         this.rescroll();
-
     }
 
     private rescroll() : void 
