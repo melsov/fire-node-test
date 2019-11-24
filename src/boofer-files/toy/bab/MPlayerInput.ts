@@ -15,6 +15,7 @@ export class CliCommand
     fire : KeyMoves.DownUpHold = KeyMoves.DownUpHold.StillUp;
     jump : boolean = false;
     debugTriggerKey : boolean = false; 
+    pickupClaimStr : string | undefined;
     
     inputSequenceNumber : number = 0;
     

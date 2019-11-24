@@ -124,18 +124,19 @@ export abstract class MAbstractWeapon
         });
         
     }
-
+ 
 
     // we think fireRate needs to be a multiple of the simulate tick rate
     protected fireRateM : number = ServerSimulateTickMillis * 50;
     protected abstract get isAutomatic() : boolean;
 
     protected _totalAmmo : number = this.MaxAmmo(); 
-    public MaxAmmo() : number { return 10; }
-    public get totalAmmo() : number { return this._totalAmmo; }
+    MaxAmmo() : number { return 10; }
+    get totalAmmo() : number { return this._totalAmmo; }
 
-    public PerPickupAmmoIncrease() : number { return 4; }
-    public addAmmo() { this._totalAmmo = Math.min(this.PerPickupAmmoIncrease() + this._totalAmmo, this.MaxAmmo()); }
+    PerPickupAmmoIncrease() : number { return 4; }
+    addAmmo() {  this.setTotalAmmo(this._totalAmmo + this.PerPickupAmmoIncrease()); }
+    setTotalAmmo(_total : number) { this._totalAmmo = Math.min(this.MaxAmmo(), _total); }
 
     protected hasAnotherClip() : boolean { return this.totalAmmo > this.PerClipAmmo(); }
 

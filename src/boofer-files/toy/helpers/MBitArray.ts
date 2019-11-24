@@ -14,6 +14,30 @@ export class MBitArray
 
     get lengthBits() : number { return this.stor.length * 8; }
 
+    get byteLength() : number { return this.stor.length; }
+
+    get AllOn() : boolean {
+        for(let i=0; i<this.stor.length; ++i) {
+            if(~this.stor[i] !== 0) { return false; }
+        }
+        return true;
+    }
+
+    get AllOff() : boolean {
+        for(let i=0;i<this.stor.length; ++i) {
+            if(this.stor[i] !== 0) { return false; }
+        }
+        return true;
+    }
+
+    byteAt(byteIndex : number) : number {
+        return this.stor[byteIndex];
+    }
+
+    setByteAt(byteIndex : number, _byte : number) {
+        this.stor[byteIndex] = _byte;
+    }
+
     get(idx : number) : boolean {
         const bit = idx % 8;
         const b = this.stor[Math.floor(idx/8)];
@@ -60,14 +84,14 @@ export class MBitArray
         return MByteUtils.Uint8ArrayToString(this.stor); 
     }
 
-    iterateMismatches(otherUint8s : Uint8Array, callback : (curr : boolean, next : boolean, idx : number) => void) {
+    iterateMismatches(otherUint8s : Uint8Array, callback : (next : boolean, idx : number) => void) {
         const len = Math.min(otherUint8s.length, this.stor.length) * 8;
         let next = false, currVal = false;
         for(let i=0; i < len; ++i) {
             next = MBitArray.GetBit(otherUint8s, i);
             currVal = this.get(i);
             if(next !== currVal) {
-                callback(currVal, next, i);
+                callback(next, i);
             }
         }
     }

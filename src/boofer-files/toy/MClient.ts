@@ -31,6 +31,7 @@ import { ServerUpdate, WelcomePackage, UnpackCommString } from "./comm/CommTypes
 import { UINumberSet } from "./html-gui/UINumberSet";
 import { UIDebugWorldState } from "./html-gui/UIDebugWorldState";
 import { MMetronomeInput } from "./bab/MMetronomeInput";
+import { MPickupManager } from "./bab/NetworkEntity/Pickup/MPickupManager";
 
 
 
@@ -55,7 +56,7 @@ export function CommandToString(cmd : CliCommand) : string
 
 export function CommandFromString(str : string) : CliCommand
 {
-    let cmd = <CliCommand> JSON.parse(str);
+    const cmd = <CliCommand> JSON.parse(str);
     cmd.forward = BHelpers.Vec3FromJSON(cmd.forward);
     cmd.rotation = BHelpers.Vec3FromJSON(cmd.rotation);
     cmd.debugPosRoAfterCommand = InterpData.FromJSON(cmd.debugPosRoAfterCommand);
@@ -90,6 +91,8 @@ export class MClient
     private NoLongerMeaningfulClientNumber : number = 0;
 
     private sampleInputTimer : MTickTimer = new MTickTimer(MServer.ServerSimulateTickMillis);
+
+    private pickupManager : MPickupManager;
 
     private fromServer : LagQueue<string> = new LagQueue<string>(LAG_MS_FAKE, 0, 0, 6); 
     // private fromServer : Collections.Queue<string> = new Collections.Queue<string>();
@@ -144,8 +147,10 @@ export class MClient
         
         this.playerEntity = new ClientControlledPlayerEntity(welcomePackage.shortId); // MNetworkPlayerEntity(this.user.UID);
         this.puppetMaster = new MPuppetMaster(this.game.mapPackage); // this.game.scene);
-        this.input = debugPlayerArrivalNumber === 1 ? new MMetronomeInput(false) : new MPlayerInput(false);
+        this.input = debugPlayerArrivalNumber === 1 && MUtils.QueryStringContains('metronome') ? new MMetronomeInput(false) : new MPlayerInput(false);
         this.input.useScene(this.game.canvas, this.game.scene);
+
+        this.pickupManager = MPickupManager.CreateTestManager(this.game.mapPackage); // new MPickupManager(55, 4, .5, this.game.mapPackage);
         
         this.playerEntity.setupShadow(this.game.scene, this.NoLongerMeaningfulClientNumber);
         this.clientViewState.getPuppet = (ent : MNetworkEntity) => {
@@ -373,6 +378,9 @@ export class MClient
 
         command.claimY = this.playerEntity.position.y;
 
+        // Pickups
+        command.pickupClaimStr = this.pickupManager.pickupClaimsString(this.playerEntity.position);
+
         this.confirmMessageOrganizer.debugConsumeCheckClear(true);
         command.confirmHashes = this.confirmMessageOrganizer.consumeHashes();
 
@@ -515,6 +523,8 @@ export class MClient
             }
 
             this.consumeConfirmables(serverUpdate.confirmableMessages);
+
+            this.pickupManager.copyFromBroadcast(serverUpdate.pickupData);
 
             this.clientViewState.ackIndex = absNextState.ackIndex;
 

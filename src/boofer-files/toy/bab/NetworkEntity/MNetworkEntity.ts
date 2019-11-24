@@ -435,6 +435,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         // to.shouldDelete = from.shouldDelete;
     }
 
+    // TODO: broadcast ammo changes here
     private Pack(sd : any) 
     {
         let id = this.puppet.getInterpData();
@@ -442,21 +443,30 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         threeFlagsThenHealth |= ((this.isDelta ? 1 : 0) << 7);
         // two unused bits!
         let strhealth = MByteUtils.ByteSizeNumberToString(threeFlagsThenHealth);
-        sd.c = `${this.netId}${id.toByteString()}${strhealth}`;
+        const ammoStr = MByteUtils.ByteSizeNumberToString(this.playerPuppet.arsenal.getTotalAmmo());
+        sd.c = `${this.netId}${id.toByteString()}${ammoStr}${strhealth}`;
         this.transientStateBook.addToObject(sd);
     }
 
     private static Unpack(sd : any) : MNetworkPlayerEntity
     {
+        // Byte layout of sd.c (see Pack()):
+        // / netId / netId / interp data .../ ... / ammo / 3flags+health /
         let bstr = <string> sd.c;
-        let netId = bstr.substr(0,2);
-        let idstr = bstr.substr(2, InterpData.SizeFloatBytes());
-        let id = InterpData.FromByteString(idstr);
+        const netId = bstr.substr(0,2);
+        const idstr = bstr.substr(2, InterpData.SizeFloatBytes());
 
-        let result = new MNetworkPlayerEntity(netId, id.position, id.rotation);
         
-        bstr = bstr.substr(2 + InterpData.SizeFloatBytes());
-        let uint8s = MByteUtils.StringToUInt8s(bstr);
+        const id = InterpData.FromByteString(idstr);
+        
+        const result = new MNetworkPlayerEntity(netId, id.position, id.rotation);
+        
+        bstr = bstr.substr(2 + InterpData.SizeFloatBytes() + 1);
+        const uint8s = MByteUtils.StringToUInt8s(bstr);
+        // TODO: how to apply this? // since we'd be copying it to an
+        // update player entity not the 'real' one (which is annoying, oh well just roll with it?)
+        const ammostr = bstr.substr(2 + InterpData.SizeFloatBytes(), 1); 
+        
         result.health.takeValue = uint8s[0] & 0b11111;
         
         result.isDelta = (uint8s[0] & 0b10000000) === 1;

@@ -14,7 +14,7 @@ export class MArsenal
         MUtils.Assert(_weapons.length > 0, "need at least one weapon");
         this.weapons = _weapons.slice(0);
     }
-
+ 
     public unshift(mw : MAbstractWeapon) 
     {
         this.weapons.unshift(mw);
@@ -28,12 +28,21 @@ export class MArsenal
         this.index = idx % this.weapons.length;
     }
 
-    public next() : void 
+    // TODO: rethink relationship btwn weapon and ammo?
+    getTotalAmmo() : number {
+        return this.equipped().totalAmmo;
+    }
+
+    addAmmo() {
+        this.equipped().addAmmo();
+    }
+
+    next() : void 
     {
         this.index = (this.index + 1) % this.weapons.length;
     }
 
-    public previous() : void
+    previous() : void
     {
         this.index = this.index === 0 ? this.weapons.length - 1 : this.index - 1;
     }

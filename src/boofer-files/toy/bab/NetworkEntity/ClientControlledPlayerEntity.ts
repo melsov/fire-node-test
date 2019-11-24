@@ -18,8 +18,7 @@ export class ClientControlledPlayerEntity extends MNetworkPlayerEntity
         super(_netId, pos);
 
         this.statusHUD = new MStatusHUD(this);
-
-    }
+    } 
 
     //
     // applying movement by updating cli targets and send data's position

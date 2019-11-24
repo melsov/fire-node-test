@@ -484,6 +484,7 @@ export class MWorldState
            
             ent.updateAuthState(updateEnt);
             ent.pushInterpolationBuffer(update.ackIndex);
+            
             // health
             ent.applyNonDelta(updateEnt);
         });

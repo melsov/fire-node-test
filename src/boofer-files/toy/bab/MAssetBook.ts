@@ -73,7 +73,7 @@ import * as MDetectNode from "../../../MDetectRunningInNode";
 
     const folderModels : string = "models";
     const folderWeapons : string = `${folderModels}/weapons`;
-
+    const folderPickups : string = `${folderModels}/pickups`;
     //
     // Unlike the other loadables classes
     // This class just formalizes (intellisense-izes) key names.
@@ -90,7 +90,7 @@ import * as MDetectNode from "../../../MDetectRunningInNode";
         // readonly map : Loadable = new Loadable(folderModels, "relevant.babylon"); // want
         readonly shotgun : Loadable = new Loadable(folderWeapons, "shotgun.babylon");
         readonly player : Loadable = new Loadable(`${folderModels}`, "player.babylon");
-        readonly ammoPickup : Loadable = new Loadable(folderWeapons, "ammo-pickup.babylon");
+        readonly ammoPickup : Loadable = new Loadable(folderPickups, "ammo-pickup.babylon");
         // readonly pillarDebug : Loadable = new Loadable(`${folderModels}`, "pillar.babylon");
     }
     

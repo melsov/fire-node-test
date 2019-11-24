@@ -15,9 +15,23 @@ export class MPickupSpawner
         return `${MUtils.RoundVecString(v, 3)}`;
     });
 
-    private static GetTypeDistribution(spawner : MPickupSpawner, mapPackage : MapPackage) : void
+    private static SetTypeDistribution(spawner : MPickupSpawner, mapPackage : MapPackage) : void
     {
-        
+        spawner.distributionTable.setValue(PickupType.AMMO, 1);
+        spawner.distributionTable.setValue(PickupType.GRENADE, 0);
+
+        // normalize
+        let total = 0;
+        spawner.distributionTable.values().forEach((chance) => { total += chance });
+        if(total === 0) return;
+
+        const keys = spawner.distributionTable.keys();
+        for(let i=0; i<keys.length; ++i) {
+            let chance = spawner.distributionTable.getValue(keys[i]);
+            if(chance) {
+                spawner.distributionTable.setValue(keys[i], chance / total);
+            }
+        }
     }
 
     static MakeTestSpawner(mapPackage : MapPackage) : MPickupSpawner
@@ -28,8 +42,12 @@ export class MPickupSpawner
             points.push(v.clone());
             v.addInPlace(Vector3.Right().scaleInPlace(2));
         }
-        return new MPickupSpawner(points, 4, mapPackage);
+        const spawner = new MPickupSpawner(points, 4, mapPackage);
+        this.SetTypeDistribution(spawner, mapPackage);
+        return spawner;
     }
+
+    get PointCount() : number { return this.points.length; }
 
     constructor(
         private points : Vector3[],
@@ -66,6 +84,26 @@ export class MPickupSpawner
         {
             this.unusedPoints.add(v);
         }
+    }
+
+    // Choose type
+    nextType() : PickupType
+    {
+        const keys = this.distributionTable.keys();
+        if(keys.length === 0) return PickupType.AMMO;
+
+        let test = 0.0001;
+        let choice = Math.random();
+        const values = this.distributionTable.values();
+        for(let i=0; i < keys.length; ++i) 
+        {
+            test += values[i];
+            if(choice < test) {
+                return keys[i];
+            }
+        }
+
+        return keys[keys.length - 1];
     }
 
 

@@ -1,8 +1,7 @@
 import { Vector3, TransformNode } from "babylonjs";
 import { MNetworkPlayerEntity } from "../MNetworkEntity";
 import { MByteUtils } from "../../../Util/MByteUtils";
-import { MAmmoPickup } from "./MAmmoPickup";
-import { MapPackage } from "../../MAssetBook";
+import { MapPackage, MeshFiles } from "../../MAssetBook";
 
 export enum PickupType
 {
@@ -27,7 +26,13 @@ export abstract class MPickup
     }
 
     set available(_available : boolean) {
-        // if this is a new value...
+        // if this is a new value
+        // enable / disable children accordingly
+        if(_available !== this.available) {
+            this.root.getChildMeshes().forEach((mesh) => {
+                mesh.setEnabled(_available);
+            })
+        }
         this._available = _available;
     }
 
@@ -46,6 +51,7 @@ export abstract class MPickup
     )
     {
         this.root = new TransformNode(this.GetItemTypeName(), mapPackage.scene);
+        this.root.position = _position;
         this.setupMesh(_position, mapPackage);
     }
 
@@ -58,6 +64,9 @@ export abstract class MPickup
         meshTask.task.loadedMeshes.forEach((m) => {
             // make a clone with root as parent
             const clone = m.clone(`${this.GetItemTypeName()}-clone`, this.root);
+            if(clone) {
+                clone.setPositionWithLocalVector(Vector3.Zero());
+            }
         });
     }
 
@@ -79,7 +88,7 @@ export abstract class MPickup
         return MPickup.Create(pickupType, bookIndex, pos, mapPackage);
     }
 
-    private static Create(pickupType : PickupType, bookIndex : number, pos : Vector3, mapPackage : MapPackage) : MPickup
+    static Create(pickupType : PickupType, bookIndex : number, pos : Vector3, mapPackage : MapPackage) : MPickup
     {
         switch(pickupType)
         {
@@ -110,3 +119,21 @@ export abstract class MPickup
     }
 }
 
+
+export class MAmmoPickup extends MPickup
+{
+    GetPickupType(): PickupType {
+        return PickupType.AMMO;
+    } 
+    
+    GetMeshName() : string {
+        return MeshFiles.Instance.shotgun.getKey();
+    }
+
+    GetItemTypeName() : string { return 'AmmoPickup'; }
+    
+    protected _apply(player: MNetworkPlayerEntity): void {
+        console.log(`pretending to apply pickup to ${player.netId}`);
+    }
+
+}

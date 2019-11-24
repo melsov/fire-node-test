@@ -5,8 +5,6 @@ import { MPlayerAvatar } from "./MPlayerAvatar";
 import { MUtils } from "../Util/MUtils";
 import * as MLoader from "./MAssetBook";
 
-
-
 export interface Puppet
 {
     applyNetEntityUpdateIngoreCollisions(ent : CliTarget) : void;
@@ -20,10 +18,11 @@ export interface Puppet
 
 export class PlaceholderPuppet implements Puppet
 {
-    getBoundsCorners(): Vector3[] {
-        let corners = new Array<Vector3>();
-        let position = this.interpData.position;
-        let ellipsoid = Vector3.One();
+    getBoundsCorners(): Vector3[] 
+    {
+        const corners = new Array<Vector3>();
+        const position = this.interpData.position;
+        const ellipsoid = Vector3.One();
         corners.push(position.clone());
         corners.push(position.add(ellipsoid.scale(.4)));
         corners.push(position.add(ellipsoid.scale(-.4)));
@@ -31,8 +30,8 @@ export class PlaceholderPuppet implements Puppet
     }
     
     applyNetEntityUpdateIngoreCollisions(ent : CliTarget) : void {}
-    applyNetworkEntityUpdate(ent: CliTarget): void {  }
-    customize(skin: MLoadOut): void { }
+    applyNetworkEntityUpdate(ent: CliTarget): void {}
+    customize(skin: MLoadOut): void {}
 
     protected interpData : InterpData = new InterpData();
     getInterpData() : InterpData { return this.interpData; }

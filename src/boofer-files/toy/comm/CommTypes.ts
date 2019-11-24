@@ -26,6 +26,7 @@ export class ServerUpdate
 
     public confirmableMessages : Nullable<Array<MAbstractConfirmableMessage>> = null;
     public dbgSomeState : Nullable<MWorldState> = null;
+    public pickupData : Nullable<any> = null;
 
     constructor(
         public worldState : MWorldState,
@@ -46,6 +47,7 @@ export class ServerUpdate
 
         let su = new ServerUpdate(ws, jObj['lastInputNumber']); //ws;
         su.confirmableMessages = MAnnounce.FromServerUpdate(jObj);
+        su.pickupData = jObj.pickupData;
     
         // DEBUG
         if(jObj.dbgSomeState)

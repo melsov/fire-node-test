@@ -33,6 +33,7 @@ import { ServerUpdate, WelcomePackage } from "./comm/CommTypes";
 import { UINumberSet } from "./html-gui/UINumberSet";
 import { MDetectNode } from "../../MDetectRunningInNode";
 import { MLocalPeer } from "../MPeer";
+import { MPickupManager } from "./bab/NetworkEntity/Pickup/MPickupManager";
 
 
 const debugElem : HTMLDivElement = <HTMLDivElement> document.getElementById("debug");
@@ -177,6 +178,8 @@ export class MServer
     private welcomePackages = new Collections.Dictionary<RemotePlayer, WelcomePackage>();
     private shortIdBook = new ShortNetId();
 
+    private pickupManager : MPickupManager;
+
     constructor(
         private peer : MLocalPeer,
         private game : GameMain
@@ -186,6 +189,8 @@ export class MServer
         this.puppetMaster = new MPuppetMaster(this.game.mapPackage);
 
         this.currentState.ackIndex = 1; // start with 1 to facilitate checking clients who have never ack'd
+
+        this.pickupManager = MPickupManager.CreateTestManager(this.game.mapPackage); // new MPickupManager(55, 4, .5, this.game.mapPackage);
 
         this.lobbyUI.showHide(false);
 
@@ -334,6 +339,7 @@ export class MServer
             this.processCliCommands();
             // this.debugDoTestFire();
             // this.debugPutShadowsInRewindState();
+            this.pickupManager.recycle();
         });
         
         
@@ -408,6 +414,8 @@ export class MServer
             {
                 playerEnt.applyCliCommandServerSide(qcmd.cmd);
                 this.handleFire(playerEnt, qcmd, true);
+
+                this.pickupManager.validatePickupClaims(qcmd.cmd.pickupClaimStr, playerEnt);
 
                 // fake decrement health
                 if(qcmd.cmd.debugTriggerKey) {
@@ -917,6 +925,19 @@ export class MServer
                     // send confirmable messages
                     cli.confirmableMessageBook.addArray(this.confirmableBroadcasts);
                     su.confirmableMessages = cli.confirmableMessageBook.getUnconfirmedMessagesMoveToSent();
+
+                    // pickups
+                    su.pickupData = this.pickupManager.appendToBroadcast();
+                    // DESIGN PROBLEM: we're sending this broadcast before the
+                    // client is consuming them. Then they're null next frame
+                    // do we need confirmable message?
+
+                    // better yet. implement a scheme where:
+                    // there are only some n possible pickups. Each a fixed type/pos per bit slot
+                    // This is statically true per map. The server merely sends out the stateBook bytes
+                    // These can be sent every update without straining the network too much assuming
+                    // say 64 pick slots--4 bytes
+
                     
                     this.sendToCliUpdateSendSuccess(cli, ServerUpdate.Pack(su));
                     // cli.remotePlayer.peer.send(ServerUpdate.Pack(su));
