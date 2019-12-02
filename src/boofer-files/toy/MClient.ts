@@ -4,7 +4,7 @@ import * as MServer from "./MServer";
 import { MNetworkPlayerEntity, MNetworkEntity, InterpData } from "./bab/NetworkEntity/MNetworkEntity";
 import { GameMain, TypeOfGame } from "./GameMain";
 import { MWorldState } from "./MWorldState";
-import { MPuppetMaster, MLoadOut } from "./bab/MPuppetMaster";
+import { MLoadOut } from "./bab/MPuppetMaster";
 import { CliCommand, MPlayerInput } from "./bab/MPlayerInput";
 import { DebugHud } from "./html-gui/DebugHUD";
 import { Color3, Vector3, MeshAssetTask, TransformNode, Nullable } from "babylonjs";
@@ -18,7 +18,7 @@ import { ClientControlledPlayerEntity } from "./bab/NetworkEntity/ClientControll
 import { FPSCam } from "./bab/FPSCam";
 import { BHelpers } from "./MBabHelpers";
 import { MMessageBoard } from "./bab/MAnnouncement";
-import { ConfirmableMessageOrganizer, ConfirmableType, MAnnouncement, MPlayerReentry, MExitDeath, MAbstractConfirmableMessage } from "./helpers/MConfirmableMessage";
+import { ConfirmableMessageOrganizer, ConfirmableType, MAnnouncement, MPlayerReentry, MExitDeath, MAbstractConfirmableMessage, MDisconnectedPlayerCM } from "./helpers/MConfirmableMessage";
 import { LifeStage, StageType } from "./MLifeCycle";
 import * as Mel from "./html-gui/LobbyUI";
 import { LagQueue } from "./helpers/LagQueue";
@@ -32,6 +32,8 @@ import { UINumberSet } from "./html-gui/UINumberSet";
 import { UIDebugWorldState } from "./html-gui/UIDebugWorldState";
 import { MMetronomeInput } from "./bab/MMetronomeInput";
 import { MPickupManager } from "./bab/NetworkEntity/Pickup/MPickupManager";
+import { CliSideEntityManager } from "./MEntityManager";
+import { MEntitySnapshot } from "./MEntitySnapshot";
 
 
 
@@ -67,9 +69,9 @@ export class MClient
 {
 
     public readonly playerEntity : ClientControlledPlayerEntity;
-    private clientViewState : MWorldState = new MWorldState();
+    private clientViewState : CliSideEntityManager; // MWorldState = new MWorldState();
     private stateBuffer : MStateBuffer = new MStateBuffer();
-    private puppetMaster : MPuppetMaster;
+    // private puppetMaster : MPuppetMaster;
 
     public readonly fpsCam : FPSCam;
     private input : MPlayerInput;
@@ -113,7 +115,7 @@ export class MClient
     private debugWeapOffsetUI : UIVector3;
     private debugCliDataBeforeReconciliation : InterpData = new InterpData();
 
-    private debugWorldState : UIDebugWorldState = new UIDebugWorldState("ClientViewState", this.clientViewState);
+    // private debugWorldState : UIDebugWorldState = new UIDebugWorldState("ClientViewState", this.clientViewState);
 
     private debugMetroPosLabel = new UILabel("DebugMetronomePos", "#FFFFFF", undefined, "", "18px");
     private lastDebugMetroNow : number = 0;
@@ -144,27 +146,30 @@ export class MClient
     {
         this.lobbyUI.showHide(true);
         this.NoLongerMeaningfulClientNumber = 0; 
+
+        this.clientViewState = new CliSideEntityManager(this.game.mapPackage);
         
-        this.playerEntity = new ClientControlledPlayerEntity(welcomePackage.shortId); // MNetworkPlayerEntity(this.user.UID);
-        this.puppetMaster = new MPuppetMaster(this.game.mapPackage); // this.game.scene);
+        this.playerEntity = new ClientControlledPlayerEntity(welcomePackage.shortId, this.game.mapPackage); // MNetworkPlayerEntity(this.user.UID);
+        // this.puppetMaster = new MPuppetMaster(this.game.mapPackage); // this.game.scene);
         this.input = debugPlayerArrivalNumber === 1 && MUtils.QueryStringContains('metronome') ? new MMetronomeInput(false) : new MPlayerInput(false);
         this.input.useScene(this.game.canvas, this.game.scene);
 
         this.pickupManager = MPickupManager.CreateTestManager(this.game.mapPackage); // new MPickupManager(55, 4, .5, this.game.mapPackage);
         
         this.playerEntity.setupShadow(this.game.scene, this.NoLongerMeaningfulClientNumber);
-        this.clientViewState.getPuppet = (ent : MNetworkEntity) => {
-            return this.puppetMaster.getPuppet(ent);
-        }
-        
-        this.clientViewState.setEntity(this.playerEntity.netId, this.playerEntity);
+        // this.clientViewState.getPuppet = (ent : MNetworkEntity) => {
+        //     return this.puppetMaster.getPuppet(ent);
+        // }
+
+        this.clientViewState.lookup.setValue(this.playerEntity.netId, this.playerEntity);
+        // this.clientViewState.setEntity(this.playerEntity.netId, this.playerEntity);
         
         MUtils.Assert(this.playerEntity.playerPuppet.mesh != undefined, "surprising!");
         
         //customize puppet
         let skin = MLoadOut.DebugCreateLoadout(this.NoLongerMeaningfulClientNumber);
         
-        let playerPuppet = <MPlayerAvatar> this.puppetMaster.getPuppet(this.playerEntity);
+        let playerPuppet = <MPlayerAvatar> this.playerEntity.playerPuppet; // this.puppetMaster.getPuppet(this.playerEntity);
         playerPuppet.customize(skin);
         playerPuppet.addDebugLinesInRenderLoop();
         this.setupManagers();
@@ -308,6 +313,7 @@ export class MClient
 
     private debugUpdateMetronomePosLabel()
     {
+        /* // BROKEN ATM
         let other = this.clientViewState.debugFindAnotherPlayer(this.playerEntity.netId);
         if(other) {
             
@@ -323,6 +329,7 @@ export class MClient
                
             }
         }
+        */
     }
 
     
@@ -462,9 +469,9 @@ export class MClient
             // the latter ? would seem to involve fewer dictionary lookups?
 
             let serverUpdate : ServerUpdate = ServerUpdate.Unpack(msg);
-            let nextState = serverUpdate.worldState;
+            let nextState = serverUpdate.ws;
             
-            this.debugWorldState.update(); 
+            // this.debugWorldState.update(); 
             if(nextState.ackIndex % 10 === 0) // slow down a bit
             {
                 this.debugDeltaUpdates.text = `VALID: ${nextState.ackIndex < this.clientViewState.ackIndex ? "N" : "Y"} CLI-NEXT: ${this.clientViewState.ackIndex - nextState.ackIndex} Q Len: ${MUtils.PadToString(this.fromServer.length)} MSG size ${MUtils.PadToString(msg.length, 4)} `; 
@@ -477,12 +484,14 @@ export class MClient
             if(!nextState.isDelta) { //FOR NOW: it never is a delta 
                 absNextState = nextState;
             } else {
+                // **** NOT IN USE ***** //
+                throw new Error(`this certainly won't happen ever`);
                 // find the base state 
+                /*
                 let baseState = this.stateBuffer.stateWithAckDebug(nextState.deltaFromIndex, "CLI");
                 if(!baseState) {
                     // NOTE: 'relevancy shaking' does not trigger this condition it would seem
                     console.warn(`we probably want to deal with this case`);
-                    // this.debugDeltaUpdates.text = `!!! null base state! next.deltaFromIndex ${nextState.deltaFromIndex}`;
                     // CONSIDER: we could tell the server that we need an abs update?
                     // could lengthen our state buffer if we're getting deltas from too long ago
                     return;
@@ -494,16 +503,7 @@ export class MClient
                 absNextState.cloneFrom(baseState);
                 absNextState.addInPlaceCopyOrCloneCreate(nextState);
                 absNextState.ackIndex = nextState.ackIndex;
-
-                // DEBUG
-                // if(serverUpdate.dbgSomeState) {
-                //     this.debugDeltaUpdates.text += `SVR BASE ${serverUpdate.dbgSomeState.ackIndex} - CLI BASE ${baseState.ackIndex} = ${serverUpdate.dbgSomeState.ackIndex - baseState.ackIndex}`;
-                //     // this.debugDeltaUpdates.text += "TEST " + MWorldState.TestMinusThenAddBack(serverUpdate.debugAbsStateAnyway, baseState) + " | ";
-                //     this.debugDeltaUpdates.text += " | same base? " + baseState.debugDifsToString(serverUpdate.dbgSomeState);
-
-                // } else {
-                //     this.debugDeltaUpdates.text += "no abs";
-                // }
+                */
             }
 
             
@@ -519,11 +519,11 @@ export class MClient
                 // this.clientViewState.updateAuthStatePushInterpolationBuffers(absNextState, true); // [No need to] update only new arrivals
                 // CONSIDER: state changes? purge deleted? are these ok to do with out of date next states?
                 this.consumeConfirmables(serverUpdate.confirmableMessages);
+                this.pickupManager.copyFromBroadcast(serverUpdate.pickupData);
                 return; 
             }
 
             this.consumeConfirmables(serverUpdate.confirmableMessages);
-
             this.pickupManager.copyFromBroadcast(serverUpdate.pickupData);
 
             this.clientViewState.ackIndex = absNextState.ackIndex;
@@ -542,14 +542,16 @@ export class MClient
                 // Thinking that: sent data should not be tied to anything in game; should just be a spreadsheet.
                 // In game things 'stamp' themselves as send data (on the server)
                 // In game things update their interpdata with received send data (on the client).
-                // ...what am I not thinking of...both cli and server have a collection of puppets
+                // ...what am forgetting...? both cli and server have a collection of puppets
                 // and a buffer of world states (collections of send data organized by ackIndex)
                 // would need send data classes (?) for each type of puppet (players, pickups)
+                /*
+                // LUCKILY: stateBuffer is only needed with deltas
                 let pushClone = this.clientViewState.cloneAuthStateToInterpData();
                 pushClone.ackIndex = this.clientViewState.ackIndex;
                 // push the latest client view state
                 this.stateBuffer.push(pushClone);
-                
+                */
             }
             else 
             {
@@ -564,26 +566,30 @@ export class MClient
                 //     this.worldState.applyAbsState(nextState);
             }
 
+            // RANDOM INSIGHT: We can truncate decimals of plentity positions (for bandwidth minimization) 
+            // would have to do it everywhere (even for cli-owned player)
+
             //
             // Push state changes (fire, health pickup, etc.)
             //
             this.clientViewState.pushStateChanges(nextState);
-            this.clientViewState.purgeDeleted(nextState);
+            // this.clientViewState.purgeDeleted(nextState); // removed method (now deletes are confirmable msgs)
             
             //
             // Cli owned player
             //
-            let nextCliPlayerState = <MNetworkPlayerEntity> absNextState.lookup.getValue(this.playerEntity.netId);
-            // DEBUG
-            if(!nextCliPlayerState) {
+            let nextCliPlayerState = <MEntitySnapshot> absNextState.lookup.getValue(this.playerEntity.netId);
+
+            if(!nextCliPlayerState) { // DEBUG
                 console.log(`absNextStateKeys: ${absNextState.lookup.keys()}`);
             }
             // put the cli controlled player in the server authoritative state
             this.playerEntity.applyAuthStateToCliTargets();
-            this.playerEntity.applyNonDeltaData(nextCliPlayerState);
+
+            // this.playerEntity.applyNonDeltaData(nextCliPlayerState); // did nothing
             
             if(!this.gotFirstServerMessage) {
-                this.playerEntity.teleport(nextCliPlayerState.position);
+                this.playerEntity.teleport(nextCliPlayerState.interpData.getPosition());
                 this.gotFirstServerMessage = true;
             }
             
@@ -627,6 +633,7 @@ export class MClient
             this.messageBoard.push(<MAnnouncement[]> this.confirmMessageOrganizer.consume(ConfirmableType.Announcement)); 
             this.handlePlayerReentry(<MPlayerReentry[]> this.confirmMessageOrganizer.consume(ConfirmableType.PlayerReentry));
             this.handleExitDeath(<MExitDeath[]> this.confirmMessageOrganizer.consume(ConfirmableType.ExitDeath));
+            this.handlePlayerDC(<MDisconnectedPlayerCM[]> this.confirmMessageOrganizer.consume(ConfirmableType.DisconnectedPlayer));
         }
 
     }
@@ -665,10 +672,17 @@ export class MClient
         }
     }
 
-    // private setPlayerEntShortId(shortId : string)
-    // {
-    //     this.clientViewState.setEntity(shortId, this.playerEntity);
-    // }
+
+    private handlePlayerDC(dcMessages : MDisconnectedPlayerCM[]) 
+    {
+        for(let i=0; i< dcMessages.length; ++i)
+        {
+            const dcmsg = dcMessages[i];
+            this.clientViewState.destroyEntity(dcmsg.dcId);
+
+            // CONSIDER: will the player still exists in our UI etc?
+        }
+    }
 
     private handleExitDeath(eds : MExitDeath[]) : void 
     {

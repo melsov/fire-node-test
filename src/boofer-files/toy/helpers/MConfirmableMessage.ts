@@ -9,7 +9,8 @@ export enum ConfirmableType
 {
     Announcement = 1,
     PlayerReentry, 
-    ExitDeath
+    ExitDeath,
+    DisconnectedPlayer
 }
 
 export abstract class MAbstractConfirmableMessage
@@ -39,6 +40,8 @@ function CloneFrom(cm : any) : Nullable<MAbstractConfirmableMessage>
             return new MPlayerReentry(cm.announcementText, cm.netId, cm.loadOut, BHelpers.Vec3FromJSON(cm.spawnPos));
         case ConfirmableType.ExitDeath:
             return new MExitDeath(cm.deadNetId, cm.killerName, cm.ray, cm.colorCommentary);
+        case ConfirmableType.DisconnectedPlayer:
+            return new MDisconnectedPlayerCM(cm.dcId, cm.EH);
         default:
             return null;
     }
@@ -62,7 +65,6 @@ export class MAnnouncement extends MAbstractConfirmableMessage
 
         this.id = id ? id : this.id = Math.floor(Math.random()*1000);
     }
-    
 }
 
 export class MPlayerReentry extends MAbstractConfirmableMessage
@@ -78,7 +80,6 @@ export class MPlayerReentry extends MAbstractConfirmableMessage
     ) {
         super(ConfirmableType.PlayerReentry);
     }
-    
 }
 
 export class MExitDeath extends MAbstractConfirmableMessage
@@ -95,6 +96,24 @@ export class MExitDeath extends MAbstractConfirmableMessage
     )
     {
         super(ConfirmableType.ExitDeath);
+    }
+}
+
+export class MDisconnectedPlayerCM extends MAbstractConfirmableMessage
+{
+    public hashcode(): number {
+        return MUtils.StringToHash(`${this.dcId}${this.EH}`);
+    }
+
+    public readonly EH : string; // extra hash characters
+
+    constructor(
+        public readonly dcId : string,
+        extraHashChars ? : string
+    )
+    {
+        super(ConfirmableType.DisconnectedPlayer);
+        this.EH = extraHashChars ? extraHashChars : MUtils.RandomString(5);
     }
     
 }

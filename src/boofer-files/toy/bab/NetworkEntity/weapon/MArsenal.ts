@@ -28,6 +28,23 @@ export class MArsenal
         this.index = idx % this.weapons.length;
     }
 
+    getAmmos() : [number,number] {
+        const ammos = new Array<number>();
+        for(let i=0; i<this.weapons.length; ++i) {
+            ammos.push(this.weapons[i].totalAmmo);
+        }
+        return [ammos[0], ammos.length > 1 ? ammos[1] : 0];
+    }
+
+    public setAmmos(ammos : number[]) {
+        // this will happen (TODO: add a secondary weapon)
+        // if(ammos.length !== this.weapons.length) throw new Error(`bad ammo update. update array len: ${ammos.length}`);
+        for(let i=0; i<ammos.length; ++i) {
+            if(i < this.weapons.length)
+                this.weapons[i].setTotalAmmo(ammos[i]);
+        }
+    }
+
     // TODO: rethink relationship btwn weapon and ammo?
     getTotalAmmo() : number {
         return this.equipped().totalAmmo;

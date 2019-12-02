@@ -8,6 +8,8 @@ export enum ProjectileType
 }
 
 //CONSIDER : a parent DamageInfo class
+// CONSIDER: Might not need any of this: just a 
+// count: how many times hit (max 3)
 export class MProjectileHitInfo
 {
     constructor(

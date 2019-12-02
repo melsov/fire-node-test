@@ -22,10 +22,14 @@ export class MStateBuffer
         if(this.stor.length >= this.MaxLength) {
             this.stor.shift();
         }
+        ws.ackIndex = this.stor.length === 0 ? 1 : this.last().ackIndex + 1;
         return this.stor.push(ws);
     }
 
     pushACloneOf(ws : MWorldState) : number {
+        throw new Error(`Do this another way: stamp MNetEnts to
+         a new WorldState. World states no longer hold copies of NetEnts
+         they hold EntitySnapshots`);
         let clone = new MWorldState();
         clone.cloneFrom(ws);
         return this.push(clone);

@@ -1,18 +1,23 @@
 import { MNetworkEntity, MNetworkPlayerEntity } from "./bab/NetworkEntity/MNetworkEntity";
 import * as Collections from "typescript-collections";
-import { Puppet, PlaceholderPuppet } from "./bab/MPuppetMaster";
+import { Puppet } from "./bab/MPuppetMaster";
 import { MUtils } from "./Util/MUtils";
 import { Vector3, Scene, Ray, Tags, RayHelper, Nullable, Color3, Mesh, AbstractMesh } from "babylonjs";
 import * as MServer  from "./MServer";
 import { GameEntityTags } from "./GameMain";
 import { MByteUtils } from "./Util/MByteUtils";
 import { MPlayerAvatar } from "./bab/MPlayerAvatar";
+import { MEntitySnapshot } from "./MEntitySnapshot";
+import { MEntityManager, ServerSideEntityManager } from "./MEntityManager";
+import { Relevancy } from "./Relevancy";
 
 export class MWorldState
 {
-    readonly lookup : Collections.Dictionary<string, MNetworkEntity> = new Collections.Dictionary<string, MNetworkEntity>();
+    // readonly lookup = new Collections.Dictionary<string, MNetworkEntity>();
+    readonly lookup = new Collections.Dictionary<string, MEntitySnapshot>();
 
-    getPuppet : (ent : MNetworkEntity) => Puppet;
+
+    // getPuppet : (ent : MNetworkEntity) => Puppet;
 
     ackIndex : number = -1;
 
@@ -52,8 +57,9 @@ export class MWorldState
     {
         for(let i=0; i<jray.length; ++i)
         {
-            let jEnt = JSON.parse(jray[i]);
-            let ent = MNetworkEntity.fromJSON(jEnt);
+            // console.log(jray[i]);
+            // let jEnt = JSON.parse(jray[i]);
+            let ent = MEntitySnapshot.FromByteString(jray[i]); // jEnt); // MNetworkEntity.fromJSON(jEnt);
             ws.lookup.setValue(ent.netId, ent);
         }
     }
@@ -64,7 +70,7 @@ export class MWorldState
         result.m = this.metaDataToByteString();
         let entstrs = new Array<string>();
         this.lookup.forEach((key, ent) => {
-            entstrs.push(JSON.stringify(ent));
+            entstrs.push(ent.toByteString()); // entstrs.push(JSON.stringify(ent));
         });
         result.l = entstrs;
         return result;
@@ -79,23 +85,27 @@ export class MWorldState
     }
 
     constructor(
+        _timestamp ? : number
     ) 
     {
-        this.getPuppet = (ent : MNetworkEntity) => { return new PlaceholderPuppet(); }
-        this._timestamp = +new Date();
+        this._timestamp = _timestamp ? _timestamp : +new Date();
     }
 
     public cloneFrom(other : MWorldState) : void
     {
+        throw new Error(`We're not sure what this would mean at the moment`);
+        /*
         this.ackIndex = other.ackIndex;
         other.lookup.forEach((key : string, ent : MNetworkEntity) => {
             this.lookup.setValue(key, ent.clone());
         });
-
+        */
     }
 
     debugShadowCopyPlayerInterpDataFrom(other : MWorldState) : void 
     {
+        throw new Error(`What does this mean?`);
+        /*
         this.ackIndex = other.ackIndex;
         other.forEachPlayer((plent) => {
             let shnetId = plent.netId; // + "SHAD";
@@ -110,55 +120,61 @@ export class MWorldState
             else {
                 console.log(`no shplayer with netId ${shnetId}`);
             }
-        })        
+        })     
+        */   
     }
 
-    debugFindAnotherPlayer(skipNetId : string) : Nullable<MNetworkPlayerEntity>
-    {
-        let result = null;
-        this.forEachPlayer((plent) => {
-            if(plent.netId !== skipNetId) { result = plent; return true; }
-            return false;
-        });
+    // debugFindAnotherPlayer(skipNetId : string) : Nullable<MNetworkPlayerEntity>
+    // {
+    //     let result = null;
+    //     this.forEachPlayer((plent) => {
+    //         if(plent.netId !== skipNetId) { result = plent; return true; }
+    //         return false;
+    //     });
 
-        return result;
-    }
+    //     return result;
+    // }
 
-    debugGetPlayerUnsafe(netId : string) : MNetworkPlayerEntity
-    {
-        return <MNetworkPlayerEntity> this.lookup.getValue(netId);
-    }
+    // debugGetPlayerSnapshotUnsafe(netId : string) : MEntitySnapshot
+    // {
+    //     return <MEntitySnapshot> this.lookup.getValue(netId);
+    // }
 
     // lamentable (spaghetti)
-    public cloneAuthStateToInterpData() : MWorldState
-    {
-        let clone = new MWorldState();
-        this.lookup.forEach((key , ent) => {
-            clone.lookup.setValue(key, ent.cloneWithAuthStateOfOtherToInterpData());
-        });
-        return clone;
-    }
+    // public cloneAuthStateToInterpData() : MWorldState
+    // {
+    //     let clone = new MWorldState();
+    //     this.lookup.forEach((key , ent) => {
+    //         clone.lookup.setValue(key, ent.cloneWithAuthStateOfOtherToInterpData());
+    //     });
+    //     return clone;
+    // }
 
-    private static _debugRH : RayHelper = new RayHelper(new Ray(Vector3.Zero(), Vector3.One(), 1));
     
     public relevancyShallowClone(
         observer : MNetworkPlayerEntity | undefined, 
         scene : Scene, 
         relevantBook : Collections.Dictionary<string, number>, 
-        closeByRadius : number) : MWorldState
+        closeByRadius : number,
+        entMan : ServerSideEntityManager) : MWorldState
     {
         let ws = new MWorldState();
         ws.ackIndex = this.ackIndex;
         ws._timestamp = this._timestamp;
 
-        this.relevancyFilter(
+        Relevancy.Filter(
+        // entMan.relevancyFilter(
             observer, 
+            entMan,
             scene,
             relevantBook,
             closeByRadius,
             (relevancy, key, ent) => {
                 if(relevancy > MServer.Relevancy.NOT_RELEVANT) {
-                    ws.setEntity(key, ent);
+                    const snap = this.lookup.getValue(key);
+                    if(!snap) throw new Error(`${key} not found. in shallow clone this shouldn't happen`);
+                    // ws.setEntity(key, ent);
+                    ws.lookup.setValue(key, snap);
                 }
             }
         );
@@ -166,246 +182,245 @@ export class MWorldState
         return ws;
     }
 
-    public relevancyFilter(
-        observer : MNetworkPlayerEntity | undefined, 
-        scene : Scene, 
-        relevantBook : Collections.Dictionary<string, number>, 
-        closeByRadius : number,
-        callback : (relevancy : MServer.Relevancy, key : string, ent : MNetworkEntity, prevRelevancy : MServer.Relevancy) => void
-        ) : void
-    {
+    // public relevancyFilter(
+    //     observer : MNetworkPlayerEntity | undefined, 
+    //     scene : Scene, 
+    //     relevantBook : Collections.Dictionary<string, number>, 
+    //     closeByRadius : number,
+    //     callback : (relevancy : MServer.Relevancy, key : string, ent : MNetworkEntity, prevRelevancy : MServer.Relevancy) => void
+    //     ) : void
+    // {
 
-        if(observer === undefined) { return; } // ws; }
+    //     if(observer === undefined) { return; } // ws; }
         
-        let keys = this.lookup.keys();
-        let key : string = '';
-        let relevancy : number | undefined = 0;
-        let prevRelevancy : MServer.Relevancy = MServer.Relevancy.NOT_RELEVANT;
-        let ent : MNetworkEntity | undefined = undefined;
-        for(let j=0; j<keys.length; ++j)
-        {
-            key = keys[j];
-            ent = <MNetworkEntity> this.lookup.getValue(key);
-            relevancy = relevantBook.getValue(key);
+    //     let keys = this.lookup.keys();
+    //     let key : string = '';
+    //     let relevancy : number | undefined = 0;
+    //     let prevRelevancy : MServer.Relevancy = MServer.Relevancy.NOT_RELEVANT;
+    //     let ent : MNetworkEntity | undefined = undefined;
+    //     for(let j=0; j<keys.length; ++j)
+    //     {
+    //         key = keys[j];
+    //         ent = <MNetworkEntity> this.lookup.getValue(key);
+    //         relevancy = relevantBook.getValue(key);
 
-            if(relevancy !== undefined) { prevRelevancy = relevancy; }
+    //         if(relevancy !== undefined) { prevRelevancy = relevancy; }
 
-            if(ent === observer) { relevancy = prevRelevancy = MServer.Relevancy.RECENTLY_RELEVANT; }
-            else if(relevancy === undefined) { 
-                relevancy = MServer.Relevancy.NOT_RELEVANT; 
-            }
-            // CONSIDER: clients can request relevancy for net ents that they might be about to encounter (they think)
-            // without this we risk getting 'statues': never updated other players that stay in their last seen spot in the cli players view
-            // could use a simple (fairly wide) radius (or a box since we foresee a boxy world? or some cleverly bounced rays) to determine which n-ents to request
-            // within this radius, only need to ask for others who were not seen in the last update.
-            // OR (BETTER): Simply mark irrelevant players as irrelevant in server updates and make them invisible on the client
-            else if (relevancy <= -MServer.Relevancy.RECENTLY_RELEVANT) { // They haven't been relevant for a while. force relevance. 
-                relevancy = MServer.Relevancy.NOT_RELEVANT + 2; 
-            } 
+    //         if(ent === observer) { relevancy = prevRelevancy = MServer.Relevancy.RECENTLY_RELEVANT; }
+    //         else if(relevancy === undefined) { 
+    //             relevancy = MServer.Relevancy.NOT_RELEVANT; 
+    //         }
+    //         // CONSIDER: clients can request relevancy for net ents that they might be about to encounter (they think)
+    //         // without this we risk getting 'statues': never updated other players that stay in their last seen spot in the cli players view
+    //         // could use a simple (fairly wide) radius (or a box since we foresee a boxy world? or some cleverly bounced rays) to determine which n-ents to request
+    //         // within this radius, only need to ask for others who were not seen in the last update.
+    //         // OR (BETTER): Simply mark irrelevant players as irrelevant in server updates and make them invisible on the client
+    //         else if (relevancy <= -MServer.Relevancy.RECENTLY_RELEVANT) { // They haven't been relevant for a while. force relevance. 
+    //             relevancy = MServer.Relevancy.NOT_RELEVANT + 2; 
+    //         } 
             
 
-            if(relevancy < MServer.Relevancy.RECENTLY_RELEVANT) 
-            {
-                let corners = ent.puppet.getBoundsCorners();
-                for(let i=0;i<corners.length; ++i) 
-                {
-                    let dif = corners[i].subtract(observer.position);
-                    let distSq = dif.lengthSquared();
-                    if(distSq < closeByRadius * closeByRadius) {
-                        relevancy = MServer.Relevancy.RECENTLY_RELEVANT;
-                        break;
-                    }
+    //         if(relevancy < MServer.Relevancy.RECENTLY_RELEVANT) 
+    //         {
+    //             let corners = ent.puppet.getBoundsCorners();
+    //             for(let i=0;i<corners.length; ++i) 
+    //             {
+    //                 let dif = corners[i].subtract(observer.position);
+    //                 let distSq = dif.lengthSquared();
+    //                 if(distSq < closeByRadius * closeByRadius) {
+    //                     relevancy = MServer.Relevancy.RECENTLY_RELEVANT;
+    //                     break;
+    //                 }
 
-                    let ray = new Ray(observer.position.clone(), dif, 1.1);
+    //                 let ray = new Ray(observer.position.clone(), dif, 1.1);
 
-                    //DEBUG
-                    MWorldState._debugRH.hide();
-                    MWorldState._debugRH.dispose();
-                    MWorldState._debugRH.ray = ray;
+    //                 //DEBUG
+    //                 MWorldState._debugRH.hide();
+    //                 MWorldState._debugRH.dispose();
+    //                 MWorldState._debugRH.ray = ray;
 
-                    let pinfo = scene.pickWithRay(ray, (mesh : AbstractMesh) => {
-                        if(mesh === null) return false; 
-                        if(mesh.name === observer.netId) return false; // pass through this player
-                        let tgs = <string | null> Tags.GetTags(mesh, true); 
-                        if(tgs === null) return false;
-                        return (tgs.indexOf(GameEntityTags.PlayerObject) >= 0 || tgs.indexOf(GameEntityTags.Terrain) >= 0) 
-                    }, true); // want fastCheck
+    //                 let pinfo = scene.pickWithRay(ray, (mesh : AbstractMesh) => {
+    //                     if(mesh === null) return false; 
+    //                     if(mesh.name === observer.netId) return false; // pass through this player
+    //                     let tgs = <string | null> Tags.GetTags(mesh, true); 
+    //                     if(tgs === null) return false;
+    //                     return (tgs.indexOf(GameEntityTags.PlayerObject) >= 0 || tgs.indexOf(GameEntityTags.Terrain) >= 0) 
+    //                 }, true); // want fastCheck
 
-                    if(pinfo && pinfo.hit && pinfo.pickedMesh) {
-                        if(pinfo.pickedMesh.name === ent.netId) {
-                            relevancy = MServer.Relevancy.RECENTLY_RELEVANT;
-                            // could call break here. except debug rays
-                        }
-                    }
+    //                 if(pinfo && pinfo.hit && pinfo.pickedMesh) {
+    //                     if(pinfo.pickedMesh.name === ent.netId) {
+    //                         relevancy = MServer.Relevancy.RECENTLY_RELEVANT;
+    //                         // could call break here. except debug rays
+    //                     }
+    //                 }
 
-                    // DISABLE REL RAY // MWorldState._debugRH.show(scene, relevancy > MServer.Relevancy.NOT_RELEVANT ?  Color3.Red() : Color3.Yellow());
-                    if(relevancy === MServer.Relevancy.RECENTLY_RELEVANT) {
-                        break;
-                    }
+    //                 // DISABLE REL RAY // MWorldState._debugRH.show(scene, relevancy > MServer.Relevancy.NOT_RELEVANT ?  Color3.Red() : Color3.Yellow());
+    //                 if(relevancy === MServer.Relevancy.RECENTLY_RELEVANT) {
+    //                     break;
+    //                 }
 
-                } // END OF CORNERS LOOP
-            }
+    //             } // END OF CORNERS LOOP
+    //         }
 
-            relevancy--;
-            relevantBook.setValue(key, relevancy);
+    //         relevancy--;
+    //         relevantBook.setValue(key, relevancy);
 
-            callback(relevancy, key, ent, prevRelevancy);
-            // if(relevancy > MServer.Relevancy.NOT_RELEVANT) {
-            //     ws.lookup.setValue(key, ent);
-            // }
-        }
-        // return ws;
-    }
+    //         callback(relevancy, key, ent, prevRelevancy);
+    //         // if(relevancy > MServer.Relevancy.NOT_RELEVANT) {
+    //         //     ws.lookup.setValue(key, ent);
+    //         // }
+    //     }
+    //     // return ws;
+    // }
 
-    public debugCheckPositions() : void
-    {
-        this.lookup.forEach((key : string, ent : MNetworkEntity) => {
-            let plent = ent.getPlayerEntity();
-            if(plent) console.log(`${plent.netId}:  ${plent.playerPuppet.getInterpData().position}`);
-        });
-    }
+    // public debugCheckPositions() : void
+    // {
+    //     this.lookup.forEach((key : string, ent : MNetworkEntity) => {
+    //         let plent = ent.getPlayerEntity();
+    //         if(plent) console.log(`${plent.netId}:  ${plent.playerPuppet.getInterpData().position}`);
+    //     });
+    // }
 
-    debugHasDeltaEntities() : string
-    {
-        let deltaCount = 0;
-        let len = this.lookup.keys().length;
-        this.lookup.forEach((key, ent) => {
-            if(ent.isDelta) {
-                deltaCount++;
-            }
-        });
-        return deltaCount === 0 ? "no deltas" : (deltaCount === len ? "all deltas" : `mixed delta, abs ${deltaCount} / ${len}`);
-    }
+    // debugHasDeltaEntities() : string
+    // {
+    //     let deltaCount = 0;
+    //     let len = this.lookup.keys().length;
+    //     this.lookup.forEach((key, ent) => {
+    //         if(ent.isDelta) {
+    //             deltaCount++;
+    //         }
+    //     });
+    //     return deltaCount === 0 ? "no deltas" : (deltaCount === len ? "all deltas" : `mixed delta, abs ${deltaCount} / ${len}`);
+    // }
 
-    relevancyShallowCloneOrDeltaFrom(
-        other : MWorldState,
-        observer : MNetworkPlayerEntity | undefined, 
-        scene : Scene, 
-        relevantBook : Collections.Dictionary<string, number>, 
-        closeByRadius : number) : MWorldState
-    {
-        // delta updates don't play well with relevancy filtering at the moment.
-        // resolving a base state when an entity comes into relevancy from irrelevancy
-        // doesn't work. (causes inaccurate positions and shaking.)
-        throw new Error(`please don't use this method at all. (only do abs updates)`);
+    // relevancyShallowCloneOrDeltaFrom(
+    //     other : MWorldState,
+    //     observer : MNetworkPlayerEntity | undefined, 
+    //     scene : Scene, 
+    //     relevantBook : Collections.Dictionary<string, number>, 
+    //     closeByRadius : number) : MWorldState
+    // {
+    //     // delta updates don't play well with relevancy filtering at the moment.
+    //     // resolving a base state when an entity comes into relevancy from irrelevancy
+    //     // doesn't work. (causes inaccurate positions and shaking.)
+    //     throw new Error(`please don't use this method at all. (only do abs updates)`);
 
-        let delta = new MWorldState();
-        delta.ackIndex = this.ackIndex;
-        delta.deltaFromIndex = other.ackIndex;
-        delta._timestamp = this._timestamp;
+    //     let delta = new MWorldState();
+    //     delta.ackIndex = this.ackIndex;
+    //     delta.deltaFromIndex = other.ackIndex;
+    //     delta._timestamp = this._timestamp;
         
 
-        this.relevancyFilter(
-            observer,
-            scene,
-            relevantBook,
-            closeByRadius,
-            (relevancy, key, ent, prevRelevancy) => {
-                if(relevancy > MServer.Relevancy.NOT_RELEVANT) {
-                    let baseEnt = other.lookup.getValue(key);
-                    if(!baseEnt) {
-                        delta.lookup.setValue(key, ent);
-                    } else {
-                        // TODO: Actually handle relevancy transitions
-                        // on client. We're reverting to Abs updates for now
-                        // so this method won't even be used
+    //     this.relevancyFilter(
+    //         observer,
+    //         scene,
+    //         relevantBook,
+    //         closeByRadius,
+    //         (relevancy, key, ent, prevRelevancy) => {
+    //             if(relevancy > MServer.Relevancy.NOT_RELEVANT) {
+    //                 let baseEnt = other.lookup.getValue(key);
+    //                 if(!baseEnt) {
+    //                     delta.lookup.setValue(key, ent);
+    //                 } else {
+    //                     // TODO: Actually handle relevancy transitions
+    //                     // on client. We're reverting to Abs updates for now
+    //                     // so this method won't even be used
 
-                        // did they just become relevant?
-                        // if so, just copy. don't send a delta
-                        // because deltas won't be accurate when 
-                        // based on out of date base states
-                        // if(prevRelevancy <= MServer.Relevancy.NOT_RELEVANT) {
-                        //     let clone = ent.clone();
-                        //     clone.needsRebase = true;
-                        //     delta.lookup.setValue(key, clone);
-                        // } else 
-                        {
-                            delta.lookup.setValue(key, ent.minus(baseEnt));
-                        }
-                    }
-                }
-            }
-        );
-        return delta;
-    }
+    //                     // did they just become relevant?
+    //                     // if so, just copy. don't send a delta
+    //                     // because deltas won't be accurate when 
+    //                     // based on out of date base states
+    //                     // if(prevRelevancy <= MServer.Relevancy.NOT_RELEVANT) {
+    //                     //     let clone = ent.clone();
+    //                     //     clone.needsRebase = true;
+    //                     //     delta.lookup.setValue(key, clone);
+    //                     // } else 
+    //                     {
+    //                         delta.lookup.setValue(key, ent.minus(baseEnt));
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     );
+    //     return delta;
+    // }
 
-    deltaFrom(other : MWorldState) : MWorldState
-    {
-        let delta = this.minus(other);
-        delta.ackIndex = this.ackIndex;
-        delta.deltaFromIndex = other.ackIndex;
-        delta._timestamp = this._timestamp;
-        return delta;
-    }
+    // deltaFrom(other : MWorldState) : MWorldState
+    // {
+    //     let delta = this.minus(other);
+    //     delta.ackIndex = this.ackIndex;
+    //     delta.deltaFromIndex = other.ackIndex;
+    //     delta._timestamp = this._timestamp;
+    //     return delta;
+    // }
  
-    private minus(other : MWorldState) : MWorldState
-    {
-        let delta = new MWorldState();
-        this.lookup.forEach((key : string, ent : MNetworkEntity) => {
-            let otherEnt = other.lookup.getValue(key);
-            if(otherEnt === undefined){
-                delta.lookup.setValue(key, ent.clone());
-            } else {
-                delta.lookup.setValue(key, ent.minus(otherEnt));
-            }
-        });
+    // private minus(other : MWorldState) : MWorldState
+    // {
+    //     let delta = new MWorldState();
+    //     this.lookup.forEach((key : string, ent : MNetworkEntity) => {
+    //         let otherEnt = other.lookup.getValue(key);
+    //         if(otherEnt === undefined){
+    //             delta.lookup.setValue(key, ent.clone());
+    //         } else {
+    //             delta.lookup.setValue(key, ent.minus(otherEnt));
+    //         }
+    //     });
 
-        return delta;
-    }
+    //     return delta;
+    // }
 
-    // 'un - minus' (client)
-    addInPlaceCopyOrCloneCreate(other : MWorldState) : void
-    {
-        other.lookup.forEach((key, otherEnt) => {
-            let thisEnt = this.lookup.getValue(key);
-            if (thisEnt === undefined) {
-                // assert otherEnt not delta
-                this.lookup.setValue(key, otherEnt.clone());
-            } else {
-                thisEnt.addInPlaceOrCopyNonDelta(otherEnt);
-            }
-        });
-    }
+    // // 'un - minus' (client)
+    // addInPlaceCopyOrCloneCreate(other : MWorldState) : void
+    // {
+    //     other.lookup.forEach((key, otherEnt) => {
+    //         let thisEnt = this.lookup.getValue(key);
+    //         if (thisEnt === undefined) {
+    //             // assert otherEnt not delta
+    //             this.lookup.setValue(key, otherEnt.clone());
+    //         } else {
+    //             thisEnt.addInPlaceOrCopyNonDelta(otherEnt);
+    //         }
+    //     });
+    // }
 
-    debugDifsToString(other : MWorldState) : string
-    {
-        let result = "";
-        other.lookup.forEach((key, otherEnt) => {
-            let ent = this.lookup.getValue(key);
-            if(ent) {
-                result += ent.puppet.getInterpData().difToString(otherEnt.puppet.getInterpData());
-            } else {
-                result += "[]";
-            }
-        });
-        return result;
-    }
+    // debugDifsToString(other : MWorldState) : string
+    // {
+    //     let result = "";
+    //     other.lookup.forEach((key, otherEnt) => {
+    //         let ent = this.lookup.getValue(key);
+    //         if(ent) {
+    //             result += ent.puppet.getInterpData().difToString(otherEnt.puppet.getInterpData());
+    //         } else {
+    //             result += "[]";
+    //         }
+    //     });
+    //     return result;
+    // }
 
-    static TestMinusThenAddBack(a : MWorldState, b : MWorldState) : string
-    {
-        let delta = a.minus(b);
-        b.addInPlaceCopyOrCloneCreate(delta);
+    // static TestMinusThenAddBack(a : MWorldState, b : MWorldState) : string
+    // {
+    //     let delta = a.minus(b);
+    //     b.addInPlaceCopyOrCloneCreate(delta);
 
-        return b.debugDifsToString(a);
-    }
+    //     return b.debugDifsToString(a);
+    // }
 
-    public setEntity(uid : string, ent : MNetworkEntity) : void
-    {
-        this.lookup.setValue(uid, ent);
-        // this.clientPlayerUID = uid;
-        ent.setupPuppet(this.getPuppet(ent));
-    }
+    // public setEntity(uid : string, ent : MNetworkEntity) : void
+    // {
+    //     this.lookup.setValue(uid, ent);
+    //     // ent.setupPuppet(this.getPuppet(ent));
+    // }
 
     // client side helper 
-    private makeNetEntFrom(key : string, deltaEnt : MNetworkEntity) : MNetworkEntity
-    {
-        let ent = deltaEnt.clone();
-        this.lookup.setValue(key, ent);
+    // private makeNetEntFrom(key : string, deltaEnt : MNetworkEntity) : MNetworkEntity
+    // {
+    //     let ent = deltaEnt.clone();
+    //     this.lookup.setValue(key, ent);
 
-        // encourage this ent to set itself up
-        ent.setupPuppet(this.getPuppet(ent));
-        return ent;
-    }
+    //     // encourage this ent to set itself up
+    //     ent.setupPuppet(this.getPuppet(ent));
+    //     return ent;
+    // }
 
     // client side
     // public applyDelta(delta : MWorldState) : void
@@ -452,54 +467,9 @@ export class MWorldState
     //     });
     // }
 
-    public purgeDeleted(state : MWorldState) : void
-    {
-        let deletables = new Array<string> ();
-        state.lookup.forEach((key : string, ent : MNetworkEntity) => {
-            let e = this.lookup.getValue(key);
-            if(e !== undefined && ent.shouldDelete)
-            {
-                deletables.push(key);
-            }
-        });
+    
 
-        for(let i=0; i<deletables.length; ++i) {
-            let ent = this.lookup.getValue(deletables[i]);
-            if(ent){
-                ent.destroySelf();
-            }
-            this.lookup.remove(deletables[i]);
-        }
-    }
-
-    // client side
-    public updateAuthStatePushInterpolationBuffers(update : MWorldState) : void
-    {
-        update.lookup.forEach((key : string, updateEnt : MNetworkEntity) => {
-            let ent = this.lookup.getValue(key);
-
-            if(ent === undefined) {
-                ent = this.makeNetEntFrom(key, updateEnt);
-            }
-           
-            ent.updateAuthState(updateEnt);
-            ent.pushInterpolationBuffer(update.ackIndex);
-            
-            // health
-            ent.applyNonDelta(updateEnt);
-        });
-
-        // the update may not contain all entities
-        // (some may have been deemed irrelevant or have had zero deltas)
-        // push the interpolation buffers for these ents as well, to avoid repeatedly
-        // replaying the last known from-to interpolation. 
-        // WANT?
-        // this.lookup.forEach((key, ent) => {
-        //     if(!update.lookup.getValue(key)) {
-        //         ent.pushInterpolationBuffer(update.ackIndex);
-        //     }
-        // });
-    }
+   
 
     // client side
     // updateAuthState(update : MWorldState) : void 
@@ -516,94 +486,41 @@ export class MWorldState
     //     });
     // }
 
-    public interpolate(ignore : MNetworkPlayerEntity) : void 
-    {
-        this.lookup.forEach((uid : string, ent : MNetworkEntity) => {
 
-            // don't interpolate our own player avatar
-            if(ent !== ignore)
-            {
-                ent.interpolate();
-            } 
-        });
-    }
+   
 
-    // client side
-    public pushStateChanges(absState : MWorldState) : void
-    {
-        absState.lookup.forEach((key : string, absEnt : MNetworkEntity) => {
-            let ent = this.lookup.getValue(key);
-            if(ent != undefined)
-            {
-                ent.pushStateChanges(absEnt);
-            }
-        });
-    }
 
-    public clearTransientStates() : void
-    {
-        this.lookup.forEach((key : string, ent : MNetworkEntity) => {
-            ent.clearTransientStates();
-        });
-    }
+    
 
-    public resetPlayersToPresent() : void
-    {
-        this.lookup.forEach((key : string, ent : MNetworkEntity) => {
-            let plent = ent.getPlayerEntity();
-            if(plent != null)
-            {
-                plent.resetToThePresent();
-            }
-        });
-    }
+    // private forEachPlayer(callbackShouldNotContinue : (plent : MNetworkPlayerEntity) => (boolean | void)) : void 
+    // {
+    //     let keys = this.lookup.keys();
+    //     for(let i=0; i<keys.length; ++i) {
+    //         let ent = this.lookup.getValue(keys[i]);
+    //         if(ent) {
+    //             let plent = ent.getPlayerEntity();
+    //             if(plent) {
+    //                 if(callbackShouldNotContinue(plent)) {return;}
+    //             }
+    //         }
+    //     }
+    //     // this.lookup.forEach((key, ent) => {
+    //     //     let plent = ent.getPlayerEntity();
+    //     //     if(plent !== null) {
+    //     //         callback(plent);
+    //     //     }
+    //     // });
+    // }
 
-    public rewindPlayers(a : MWorldState, b: MWorldState, lerper01 : number, skipUID ? : string) : void 
-    {
-        this.lookup.forEach((key : string, ent : MNetworkEntity) => {
-            let plent = ent.getPlayerEntity();
-            if(plent !== null && key !== skipUID)
-            {
-                let pA = <MNetworkPlayerEntity> a.lookup.getValue(key);
-                let pB = <MNetworkPlayerEntity> b.lookup.getValue(key);
-                if(pA !== undefined && pB !== undefined)
-                {
-                    let pos = Vector3.Lerp(pA.position, pB.position, lerper01);
-                    plent.rewind(pos);
-                } 
-            }
-        });
-    }
-
-    private forEachPlayer(callbackShouldNotContinue : (plent : MNetworkPlayerEntity) => (boolean | void)) : void 
-    {
-        let keys = this.lookup.keys();
-        for(let i=0; i<keys.length; ++i) {
-            let ent = this.lookup.getValue(keys[i]);
-            if(ent) {
-                let plent = ent.getPlayerEntity();
-                if(plent) {
-                    if(callbackShouldNotContinue(plent)) {return;}
-                }
-            }
-        }
-        // this.lookup.forEach((key, ent) => {
-        //     let plent = ent.getPlayerEntity();
-        //     if(plent !== null) {
-        //         callback(plent);
-        //     }
-        // });
-    }
-
-    debugSetPlayerColors(c : Color3, lineColor ? : Color3) : void
-    {
-        this.forEachPlayer((plent) => {
-            let pupp = plent.puppet;
-            if(pupp instanceof MPlayerAvatar) {
-                pupp.setCharacterColor(c, lineColor);
-            }
-        });
-    }
+    // debugSetPlayerColors(c : Color3, lineColor ? : Color3) : void
+    // {
+    //     this.forEachPlayer((plent) => {
+    //         let pupp = plent.puppet;
+    //         if(pupp instanceof MPlayerAvatar) {
+    //             pupp.setCharacterColor(c, lineColor);
+    //         }
+    //     });
+    // }
 
 
     

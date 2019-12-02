@@ -8,7 +8,8 @@ import { MUtils } from "./Util/MUtils";
 import { Scene, Vector3, Tags, Nullable, Color3, Mesh, AbstractMesh, Ray, MeshBuilder, RayHelper, PickingInfo } from "babylonjs";
 import { GameMain, TypeOfGame, GameEntityTags } from "./GameMain";
 import { MWorldState } from "./MWorldState";
-import { MPuppetMaster, MLoadOut } from "./bab/MPuppetMaster";
+// import { MPuppetMaster, MLoadOut } from "./bab/MPuppetMaster";
+import { MLoadOut } from "./bab/MPuppetMaster";
 import { CliCommand, MPlayerInput } from "./bab/MPlayerInput";
 import { DebugHud } from "./html-gui/DebugHUD";
 import { MPlayerAvatar, MAX_HEALTH } from "./bab/MPlayerAvatar";
@@ -18,7 +19,7 @@ import { MPingGauge } from "./ping/MPingGauge";
 import { RemotePlayer } from "../MPlayer";
 import * as tfirebase from "../../shared/tfirebase";
 import {  MAnnounce } from "./bab/MAnnouncement";
-import { MConfirmableMessageBook, MAnnouncement, MAbstractConfirmableMessage, MPlayerReentry, MExitDeath } from "./helpers/MConfirmableMessage";
+import { MConfirmableMessageBook, MAnnouncement, MAbstractConfirmableMessage, MPlayerReentry, MExitDeath, MDisconnectedPlayerCM } from "./helpers/MConfirmableMessage";
 import { LagQueue } from "./helpers/LagQueue";
 import * as Mel from "./html-gui/LobbyUI";
 import * as MAudio from "./loading/MAudioManager";
@@ -34,6 +35,10 @@ import { UINumberSet } from "./html-gui/UINumberSet";
 import { MDetectNode } from "../../MDetectRunningInNode";
 import { MLocalPeer } from "../MPeer";
 import { MPickupManager } from "./bab/NetworkEntity/Pickup/MPickupManager";
+import { ServerSideEntityManager, MEntityManager } from "./MEntityManager";
+import { MEntitySnapshot } from "./MEntitySnapshot";
+import { stat } from "fs";
+import { MDeleteManager } from "./MDeleteManager";
 
 
 const debugElem : HTMLDivElement = <HTMLDivElement> document.getElementById("debug");
@@ -129,9 +134,9 @@ export class MServer
     private stateBuffer = new MStateBuffer(); // : Array<MWorldState> = new Array<MWorldState>();
     // public readonly stateBufferMaxLength : number = 45;
 
-    private currentState : MWorldState = new MWorldState();
+    private currentState : ServerSideEntityManager; // : MWorldState = new MWorldState();
 
-    private debugShadowState = new MWorldState();
+    private debugShadowState : ServerSideEntityManager; 
 
     //public readonly tickRate : number = ServerUpdateTickMillis;
 
@@ -149,7 +154,7 @@ export class MServer
 
     getGameMain() : GameMain { return this.game; }
 
-    private puppetMaster : MPuppetMaster;
+    //private puppetMaster : MPuppetMaster;
 
     private cmdQueue : LagQueue<QueuedCliCommand> = new LagQueue<QueuedCliCommand>(LAG_MS_FAKE, 0, 0, 6);
     // private cmdQueue : Collections.Queue<QueuedCliCommand> = new Collections.Queue<QueuedCliCommand>();
@@ -186,9 +191,11 @@ export class MServer
     )
     {
         this.game.init();
-        this.puppetMaster = new MPuppetMaster(this.game.mapPackage);
+        this.currentState = new ServerSideEntityManager(this.game.mapPackage);
+        this.debugShadowState = new ServerSideEntityManager(this.game.mapPackage);
+        // this.puppetMaster = new MPuppetMaster(this.game.mapPackage);
 
-        this.currentState.ackIndex = 1; // start with 1 to facilitate checking clients who have never ack'd
+        // this.currentState.ackIndex = 1; // start with 1 to facilitate checking clients who have never ack'd
 
         this.pickupManager = MPickupManager.CreateTestManager(this.game.mapPackage); // new MPickupManager(55, 4, .5, this.game.mapPackage);
 
@@ -229,7 +236,8 @@ export class MServer
         let user = remotePlayer.user;
         let cli = new CliEntity(remotePlayer);
         // CONFUSING: clients are mapped to UID
-        // players are mapped to shortId
+        // players are mapped to shortId.
+        // any reason to use the long id for clients?
         this.clients.setValue(user.UID, cli);
 
         if(!this.debugWatchClaimPosCli)
@@ -237,15 +245,14 @@ export class MServer
 
         let shortId = this.shortIdBook.map(user.UID);
 
-        let netPlayer = new MNetworkPlayerEntity(shortId);
-        let playerPuppet : MPlayerAvatar = <MPlayerAvatar> this.puppetMaster.getPuppet(netPlayer);
-        netPlayer.setupPuppet(playerPuppet);
-        playerPuppet.addDebugLinesInRenderLoop();
+        let netPlayer = new MNetworkPlayerEntity(shortId, this.game.mapPackage);
+        // let playerPuppet : MPlayerAvatar = <MPlayerAvatar> this.puppetMaster.getPuppet(netPlayer);
+        // netPlayer.setupPuppet(playerPuppet);
+        // playerPuppet.addDebugLinesInRenderLoop();
 
-        MUtils.Assert(playerPuppet.mesh != undefined, 'hard to believe');
         
-        let skin = MLoadOut.DebugCreateLoadout(this.clients.keys().length - 1);
-        playerPuppet.customize(skin);
+        // let skin = MLoadOut.DebugCreateLoadout(this.clients.keys().length - 1);
+        // playerPuppet.customize(skin);
 
         netPlayer.setupShadow(this.game.scene, this.clients.keys().length - 1);
 
@@ -269,10 +276,9 @@ export class MServer
     private debugAddAShadowPlayer(origNetId : string) : void 
     {
         let shNetId = origNetId;
-        let shplayer = new MNetworkPlayerEntity(shNetId);
-        let shpuppet = new MPlayerAvatar(this.game.scene, Vector3.Zero(), shNetId, this.game.mapPackage);
-        shplayer.setupPuppet(shpuppet);
-        // customize does nothing
+        let shplayer = new MNetworkPlayerEntity(shNetId, this.game.mapPackage);
+        let shpuppet = new MPlayerAvatar(Vector3.Zero(), shNetId, this.game.mapPackage);
+
         this.debugShadowState.lookup.setValue(shplayer.netId, shplayer);
 
         shpuppet.setCharacterColor(new Color3(.5, 1, .8), Color3.White());
@@ -306,23 +312,24 @@ export class MServer
 
     public disconnect(fuser : tfirebase.FBUser) : void
     {
-        console.log(`DISCONNECT: ${fuser.UID}`);
-        let cli = this.clients.getValue(fuser.UID);
-        if(cli !== undefined){
-            cli.didDisconnect = true;
-        } 
-        else { console.log(`*** couldn't find a client to disconnect?? ${fuser.UID}`); }
+        // console.log(`DISCONNECT: ${fuser.UID}`);
+        // let cli = this.clients.getValue(fuser.UID);
+        // if(cli !== undefined){
+        //     cli.didDisconnect = true;
+        // } 
+        // else { console.log(`*** couldn't find a client to disconnect?? ${fuser.UID}`); }
 
-        let ent = this.getPlayerEntityFromCurrentState(fuser.UID); 
-        if(ent !== undefined)
-        {
-            ent.shouldDelete = true;
-        }
+        // let ent = this.getPlayerEntityFromCurrentState(fuser.UID); 
+        // if(ent !== undefined)
+        // {
+        //     ent.shouldDelete = true;
+        // }
 
-        this.shortIdBook.remove(fuser.UID);
+        // this.shortIdBook.remove(fuser.UID);
+        this.delManager.addLongId(fuser.UID);
     }
 
-    public begin() : void
+    begin() : void
     {
         console.log(`MServer: begin()`);
 
@@ -351,11 +358,9 @@ export class MServer
             this.broadcastToClients(this.debugForceAbsUpdate.checked); // always forcing abs updates (for now)
 
             this.currentState.clearTransientStates(); // purge 'hits on me' for example
-            this.handleDeletes();
-
-            // fake announcement
-            // this.confirmableBroadcasts.shift();
-            // this.confirmableBroadcasts.push(new MAnnouncement(`fake announcement ${this.currentState.ackIndex}`));
+            // this.handleDeletes();
+            this.checkUnresponsiveClients();
+            this.handleDeletables();
             
         });
 
@@ -385,7 +390,8 @@ export class MServer
         return undefined; 
     }
 
-    private getEnt(ws : MWorldState, longId : string) : MNetworkEntity | undefined
+//    private getEnt(ws : MWorldState, longId : string) : MNetworkEntity | undefined
+    private getEnt(ws : MWorldState, longId : string) : MEntitySnapshot | undefined
     {
         let shortId = this.shortIdBook.getShortId(longId);
         if(shortId) {
@@ -489,10 +495,8 @@ export class MServer
 
         let ent = this.getEnt(ws, cli.remotePlayer.user.UID); // ws.lookup.getValue(cli.remotePlayer.user.UID);
         if(!ent) { throw new Error(`this is sure not to happen`); }
-
-        let plent = <MNetworkPlayerEntity>ent.getPlayerEntity();
-        let sID = plent.playerPuppet.getInterpData()
-        this.debugUIShowCliClaimDif.update(claim.position, sID.position);
+        
+        this.debugUIShowCliClaimDif.update(claim.position, ent.interpData.getPosition());
     }
 
 
@@ -569,7 +573,7 @@ export class MServer
         // TODO: isolate. for example. don't even rewind state (maybe this messes with us?)
         // with rewind disabled. check if rays behave
         
-        if(this.DEBUG_INCLUDE_REWIND && !this.rewindState(this.currentState, firingPlayer, qcmd.arrivedTimestamp)) { 
+        if(this.DEBUG_INCLUDE_REWIND && !this.rewindEntities(firingPlayer, qcmd.arrivedTimestamp)) { 
             console.log(`rewind failed`);
             MUtils.SetGridMaterialColor(this.debugFirePointMesh.material, new Color3(.3, .7, .8));
             return; 
@@ -686,7 +690,7 @@ export class MServer
         }
 
         if(this.DEBUG_INCLUDE_REWIND)
-            this.revertStateToPresent(this.currentState);
+            this.currentState.resetPlayersToPresent();
 
         //DEBUG
         console.log(debugFireStr);
@@ -737,25 +741,27 @@ export class MServer
         console.log(`${msg} span: ${span}. target span: ${targetSpan}. ${commenarty} . calc as: -${cli.roundTripMillis} -${ServerBroadcastTickMillis}`);
     }
     
-    private rewindState(state : MWorldState, firingPlayer : MNetworkPlayerEntity, cmdArriveTimestamp : number) : boolean
+    // private rewindState(state : MWorldState, firingPlayer : MNetworkPlayerEntity, cmdArriveTimestamp : number) : boolean
+    private rewindEntities(firingPlayer : MNetworkPlayerEntity, cmdArriveTimestamp : number) : boolean
     {
         let cli = this.findClient(firingPlayer.netId);
         if(!cli) { console.log('no cli?'); return false;}
 
         let rewindPointMillis = cmdArriveTimestamp - cli.roundTripMillis / 2;
 
-        return this.rewindStateAt(state, rewindPointMillis, firingPlayer.netId);
+        return this.rewindEntitiesAt(rewindPointMillis, firingPlayer.netId);
     }
 
     private debugRewindPosLabel = new UILabel('rewind-pos-label', "#FFFFFF", undefined, "SRVR", "18px");
 
-    private rewindStateAt(state : MWorldState, rewindPointMillis : number, skipNetId ? : string) : boolean
+    // private rewindStateAt(state : MWorldState, rewindPointMillis : number, skipNetId ? : string) : boolean
+    private rewindEntitiesAt(rewindPointMillis : number, skipNetId ? : string) : boolean
     {
         
         let a : Nullable<MWorldState> = null;
         let b : Nullable<MWorldState> = null;
 
-        // find the state buffers just before (a) and
+        // find the states just before (a) and
         // just after (b) rewindPointMillis
         for(let i=0; i<this.stateBuffer.length; ++i) {
             let ws = this.stateBuffer.at(i);
@@ -770,17 +776,12 @@ export class MServer
         if(a && b)
         {
             this.DebugSetRewindLabel(a.ackIndex,`REWIND ACK: ${(a.ackIndex % 100)}`);
-            state.rewindPlayers(a, b, MUtils.InverseLerp(a.timestamp, b.timestamp, rewindPointMillis), skipNetId);
+            this.currentState.rewindPlayers(a, b, MUtils.InverseLerp(a.timestamp, b.timestamp, rewindPointMillis), skipNetId);
             return true;
         } else {
-            console.warn(`get a b failed: a; ${a} b: ${b} `);
+            console.warn(`get ab failed: a; ${a} b: ${b} `);
             return false;
         }
-    }
-
-    private revertStateToPresent(state : MWorldState)
-    {
-        state.resetPlayersToPresent();
     }
 
     private DebugClis() : void 
@@ -809,30 +810,26 @@ export class MServer
             MServer.debugShadowRewindUI.getValueAt(2) !== 0
         );
     }
-     
-    private getPlayerUnsafe(ws : MWorldState, netId : string) : MNetworkPlayerEntity
-    {
-        return <MNetworkPlayerEntity> ws.lookup.getValue(netId);
-    }
+ 
 
     private debugLastRewindNow : number = 0;
 
-    private debugPushShadowState()
-    {
-        this.debugShadowState.debugShadowCopyPlayerInterpDataFrom(this.currentState);
+    // private debugPushShadowState()
+    // {
+    //     this.debugShadowState.debugShadowCopyPlayerInterpDataFrom(this.currentState);
 
 
-        ///TODO: rewind to the exact time. so that shadows mimic other players in a cli view
-        // Arrange / design so that other interpolation and rewinding use the same function?
-        // We think it should be the same rewind time delta (but with an offset to account for cli-to-server lag?)
-        if(!this.debugWatchClaimPosCli) { return; }
+    //     ///TODO: rewind to the exact time. so that shadows mimic other players in a cli view
+    //     // Arrange / design so that other interpolation and rewinding use the same function?
+    //     // We think it should be the same rewind time delta (but with an offset to account for cli-to-server lag?)
+    //     if(!this.debugWatchClaimPosCli) { return; }
 
-        let rewindConfig = MServer.DebugGetRewindConfig();
-        let lag = rewindConfig.includeLag ? LAG_MS_FAKE + (rewindConfig.includePingOverTwo ? this.debugWatchClaimPosCli.pingGauge.average / 2 : 0) : 0;
+    //     let rewindConfig = MServer.DebugGetRewindConfig();
+    //     let lag = rewindConfig.includeLag ? LAG_MS_FAKE + (rewindConfig.includePingOverTwo ? this.debugWatchClaimPosCli.pingGauge.average / 2 : 0) : 0;
 
-        this.rewindStateAt(this.debugShadowState, +new Date() - rewindConfig.InterpRewindMillis - lag);
+    //     this.rewindStateAt(this.debugShadowState, +new Date() - rewindConfig.InterpRewindMillis - lag);
       
-    }
+    // }
 
     private DebugSetRewindLabel(dNow : number, str : string) : void 
     {
@@ -851,12 +848,13 @@ export class MServer
     {
         // this.debugPushShadowState(); // WANT
 
-        this.stateBuffer.pushACloneOf(this.currentState);
-        this.currentState.ackIndex++;
+        // this.stateBuffer.pushACloneOf(this.currentState); /// OLD
+        this.stateBuffer.push(this.currentState.stamp());
+        // this.currentState.ackIndex++; // OLD
         
-        //
+        // WANT
         // Debug: for shadows. push interpolation buffers
-        this.currentState.updateAuthStatePushInterpolationBuffers(this.currentState); // weirdly enough current state pushes itself to the interp buffers ;P
+        // this.currentState.updateAuthStatePushInterpolationBuffers(this.currentState); // weirdly enough current state pushes itself to the interp buffers ;P
 
     }
 
@@ -908,14 +906,29 @@ export class MServer
                     // cliDif > this.stateBuffer.length || // too far behind?
                     cli.lastProcessedInput === 0)  // never ack'd?
                 {
-                    let state = this.stateBuffer.last().relevancyShallowClone(
+
+                    // relevancy copy world states
+                    // filter using the ServerSideEntManager method
+                    // EFFICIENCY COMPLAINT: 
+                    // We are calling the toByteString() methods
+                    // on these entities per loop without really needing to
+                    // could instead calculate all entity byte strings from the 
+                    // latest world state above this loop
+                    // then pack the relevant ones as needed.
+                    // only prob with this plan: it sort of messes with the 
+                    // mirror pack/unpack pattern
+                    // could go with clever use of the toJSON method
+                    // in server update itself...
+                    const state = this.stateBuffer.last().relevancyShallowClone(
                         <MNetworkPlayerEntity | undefined> this.currentState.lookup.getValue(user), 
                         this.game.scene, 
                         cli.relevantBook, 
-                        CLOSE_BY_RELEVANT_RADIUS * (this.debugRelevancyFilter.checked ? 1 : 9999999));
-
-                    // TODO: Cli side problem mostly: when an other player becomes irrelevant for a bit and then relevant again,
-                    // we see 'shaking' (looks like very spread out, weird, out of order interp data)
+                        CLOSE_BY_RELEVANT_RADIUS * (this.debugRelevancyFilter.checked ? 1 : 9999999),
+                        this.currentState);
+                    
+                       
+                    // TODO: Cli side problem mostly: when an 'other-player' becomes irrelevant for a bit and then relevant again,
+                    // we see 'shaking' / glitchy-ness (looks like very spread out, weird, out of order interp data)
                     // the shaking only appears in a cli view of the other.
                     // seems to go away, quickly or immediately, when abs updates are forced.
                     // diagnose, fix
@@ -928,17 +941,7 @@ export class MServer
 
                     // pickups
                     su.pickupData = this.pickupManager.appendToBroadcast();
-                    // DESIGN PROBLEM: we're sending this broadcast before the
-                    // client is consuming them. Then they're null next frame
-                    // do we need confirmable message?
 
-                    // better yet. implement a scheme where:
-                    // there are only some n possible pickups. Each a fixed type/pos per bit slot
-                    // This is statically true per map. The server merely sends out the stateBook bytes
-                    // These can be sent every update without straining the network too much assuming
-                    // say 64 pick slots--4 bytes
-
-                    
                     this.sendToCliUpdateSendSuccess(cli, ServerUpdate.Pack(su));
                     // cli.remotePlayer.peer.send(ServerUpdate.Pack(su));
 
@@ -947,6 +950,8 @@ export class MServer
                 }
                 else // Delta update
                 {
+                    /*
+                     * TURNED OFF. NO DELTA UPDATES
                     if(cliBaseState) 
                     {
                         // let delta = this.stateBuffer.last().deltaFrom(cliBaseState);
@@ -979,20 +984,64 @@ export class MServer
 
                     } else {
                         throw new Error(`no way. cant happen.`);
-                    }
+                    } 
+                    */
                    
                 }
             }
         });
 
-        this.confirmableBroadcasts.splice(0, this.confirmableBroadcasts.length);  // clear broadcasts
+        this.confirmableBroadcasts.splice(0, this.confirmableBroadcasts.length);  // clear c broadcasts
     }
 
-    private handleDeletes() : void 
+    private delManager = new MDeleteManager(); // move to top plz
+
+    //
+    // 2 ways to delete a player / client:
+    // --disconnect method is triggered with their netId as param
+    // --client becomes unresponsive for a long enough time
+    // Either way, the disconnected p / c should be deleted from
+    //   the current state (entity manager)
+    //   the 'clients' collection
+    // And (either way) generate confirmable messages (PDisconnect) 
+    // for all of the other clients
+    //
+    private handleDeletables() : void
     {
+        const clientCountBefore = this.clients.keys().length;
+
+        const dcMessages = new Array<MDisconnectedPlayerCM>();
+        this.delManager.forEach((longNetId) => 
+        {
+            const shortId = this.shortIdBook.getShortId(longNetId);
+            if(shortId)
+            {
+                this.currentState.destroyEntity(shortId);
+                //generate disconnect conf messages
+                dcMessages.push(new MDisconnectedPlayerCM(shortId));
+            }
+            this.clients.remove(longNetId);
+            this.shortIdBook.remove(longNetId);
+        })
+        this.delManager.clear();
+
+        // add dc msg for all (remaining) clients
+        this.clients.forEach((key, cli) => {
+            cli.confirmableMessageBook.addArray(dcMessages);
+        })
+        // if we went from having clients
+        // to everyone left...
+        if(clientCountBefore > 0) { this.checkNodeModeShouldExit(); }
+    }
+
+    private handleDeletesOLD() : void 
+    {
+        /*
+        // TODO: determine how deletions are marked...
+        // marked in state snapshot? (transient state???)
         this.currentState.purgeDeleted(this.currentState);
 
-        this.purgeUnresponsiveClients();
+        this.markUnresponsiveClients();
 
         let keys = this.clients.keys();
         let previousCliCount = keys.length;
@@ -1008,19 +1057,32 @@ export class MServer
         if(previousCliCount > 0) {
             this.checkNodeModeShouldExit();
         }
+        */
     }
 
-    private purgeUnresponsiveClients() : void
+    private checkUnresponsiveClients() 
     {
         let keys = this.clients.keys();
         for(let i=0; i<keys.length; ++i) 
         {
             let cli = this.clients.getValue(keys[i]);
-            if(cli && cli.sendFailCount > 100) {
-                cli.didDisconnect = true;
+            if(cli && cli.sendFailCount > 1000) {
+                this.delManager.addLongId(cli.remotePlayer.user.UID);
             }
         }
     }
+
+    // private markUnresponsiveClients() : void
+    // {
+    //     let keys = this.clients.keys();
+    //     for(let i=0; i<keys.length; ++i) 
+    //     {
+    //         let cli = this.clients.getValue(keys[i]);
+    //         if(cli && cli.sendFailCount > 1000) {
+    //             cli.didDisconnect = true;
+    //         }
+    //     }
+    // }
 
     private checkNodeModeShouldExit() : void 
     {

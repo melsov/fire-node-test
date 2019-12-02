@@ -3,6 +3,7 @@ import { CliCommand } from "../MPlayerInput";
 import { MUtils } from "../../Util/MUtils";
 import { MStatusHUD } from "../../html-gui/MStatusHUD";
 import { Vector3 } from "babylonjs";
+import { MapPackage } from "../MAssetBook";
 
 export class ClientControlledPlayerEntity extends MNetworkPlayerEntity
 {
@@ -13,9 +14,10 @@ export class ClientControlledPlayerEntity extends MNetworkPlayerEntity
 
     constructor(
         public _netId : string, 
+        mapPackage : MapPackage,
         pos ? : Vector3) 
     {
-        super(_netId, pos);
+        super(_netId, mapPackage, pos);
 
         this.statusHUD = new MStatusHUD(this);
     } 
@@ -54,13 +56,13 @@ export class ClientControlledPlayerEntity extends MNetworkPlayerEntity
         this.playerPuppet.lastCliTarget.copyFrom(this.playerPuppet.cliTarget);
     }
 
-    applyNonDeltaData(ent : MNetworkPlayerEntity) : void 
-    {
-        this.shouldDelete = ent.shouldDelete;
+    // applyNonDeltaData(ent : MNetworkPlayerEntity) : void 
+    // {
+    //     this.shouldDelete = ent.shouldDelete;
     
-        // this.health = ent.health; // should be updated already
-        this.statusHUD.update();
-    }
+    //     // this.health = ent.health; // should be updated already
+    //     this.statusHUD.update();
+    // }
 
     public apply(ent : MNetworkPlayerEntity) : void
     {

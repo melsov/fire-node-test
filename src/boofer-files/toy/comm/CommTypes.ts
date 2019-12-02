@@ -18,7 +18,7 @@ export class WelcomePackage
         let str = JSON.stringify(wpp);
         return CreateCommString(WelcomePackage.Prefix, str);
     }
-}
+} 
 
 export class ServerUpdate
 {
@@ -29,7 +29,7 @@ export class ServerUpdate
     public pickupData : Nullable<any> = null;
 
     constructor(
-        public worldState : MWorldState,
+        public ws : MWorldState,
         public lastInputNumber : number
     ){}
 
@@ -43,7 +43,7 @@ export class ServerUpdate
     {
         let jObj = JSON.parse(serverUpdateString);
         
-        let ws : MWorldState = MWorldState.fromJSON(jObj.worldState); // new MWorldState() //jObj.worldState['isDelta']);
+        let ws : MWorldState = MWorldState.fromJSON(jObj.ws); // new MWorldState() //jObj.worldState['isDelta']);
 
         let su = new ServerUpdate(ws, jObj['lastInputNumber']); //ws;
         su.confirmableMessages = MAnnounce.FromServerUpdate(jObj);

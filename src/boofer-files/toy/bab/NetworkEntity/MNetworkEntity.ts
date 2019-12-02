@@ -3,7 +3,7 @@ import * as KeyMoves from '../KeyMoves';
 import { CliCommand } from "../MPlayerInput";
 import { TransformNode, Vector3, Ray, Nullable, Mesh, MeshBuilder, Tags, StandardMaterial, Scene, NoiseProceduralTexture, SSAORenderingPipeline } from "babylonjs";
 import { BHelpers } from "../../MBabHelpers";
-import { Puppet, PlaceholderPuppet, MLoadOut } from "../MPuppetMaster";
+import { Puppet, MLoadOut } from "../MPuppetMaster";
 import { MPlayerAvatar, DEBUG_SPHERE_DIAMETER, MAX_HEALTH as MAX_HEALTH_PLAYER } from "../MPlayerAvatar";
 import { MProjectileHitInfo, ProjectileType } from "./transient/MProjectileHitInfo";
 import { GameEntityTags } from "../../GameMain";
@@ -17,6 +17,8 @@ import * as MServr  from "../../MServer"
 import { MSelectiveSetValue } from "../../helpers/MSelectiveSetValue";
 import { MPrintBinaryUtil } from "../../Util/MPrintBinaryUtil";
 import { UILabel } from "../../html-gui/UILabel";
+import { MapPackage } from "../MAssetBook";
+import { MEntitySnapshot, NonInterpolatedData } from "../../MEntitySnapshot";
 
 
 export abstract class MNetworkEntity
@@ -40,7 +42,7 @@ export abstract class MNetworkEntity
 
     public isDelta : boolean = false;
 
-    public abstract setupPuppet(pupp : Puppet) : void;
+    // public abstract setupPuppet(pupp : Puppet) : void;
 
     public get isAPlayerEntity() : boolean { return false; }
 
@@ -53,13 +55,14 @@ export abstract class MNetworkEntity
     
     public abstract teleport(pos : Vector3) : void;
 
+    public abstract stamp() : MEntitySnapshot;
     // public abstract applyDelta(delta : MNetworkEntity) : void;
 
     public abstract apply(update : MNetworkEntity) : void;
 
-    public abstract applyNonDelta(update : MNetworkEntity) : void;
+    public abstract applyNonDelta(update : NonInterpolatedData) : void;
 
-    abstract updateAuthState(update : MNetworkEntity) : void;
+    abstract updateAuthState(update : MEntitySnapshot) : void;
 
     public abstract pushInterpolationBuffer(debubAckIndex : number) : void //absUpdate : MNetworkEntity) : void;
 
@@ -68,8 +71,8 @@ export abstract class MNetworkEntity
     public abstract clearTransientStates() : void;
 
     // client state changes
-    public abstract pushStateChanges(ne : MNetworkEntity) : void;
-
+    public abstract pushStateChanges(ne : NonInterpolatedData) : void;
+ 
     public static fromJSON(serstr : any) : MNetworkEntity
     {
         let jo = <any> serstr;
@@ -82,6 +85,20 @@ export abstract class MNetworkEntity
             default:
                 return MNetworkPlayerEntity.fromJSON(jo);
         }
+    }
+
+    static CreateFrom(snap : MEntitySnapshot, mapPackage : MapPackage) : MNetworkEntity
+    {
+        // There are only player entities
+        // so just return one
+        const interp = snap.interpData;
+        const result = new MNetworkPlayerEntity(
+            snap.netId,
+            mapPackage,
+            interp.getPosition(),
+            interp.getRotation());
+
+        return result;
     }
 
     public abstract clone() : MNetworkEntity;
@@ -112,9 +129,20 @@ function GetTInterpDataBuffer(buff:ArrayBuffer) {
 }
 function SizeTInterpDataByes() : number { return 4; }
 
-export class InterpData
+
+export interface ImmutableInterpdata
+{
+    getPosition() : Vector3;
+    getRotation() : Vector3;
+    clone() : InterpData;
+}
+
+export class InterpData implements ImmutableInterpdata
 {
     // TODO: send, reinstate interpdata to, from Float16
+
+    getPosition() { return this.position.clone(); }
+    getRotation() { return this.rotation.clone(); }
 
     position : Vector3;
     rotation : Vector3;
@@ -330,6 +358,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
     protected isClientControlledPlayer() : boolean { return false; }
 
+
     public readonly health = new MSelectiveSetValue<number>(
         MAX_HEALTH_PLAYER, 
         (next)=> { return next !== NOT_HEALTH_DATA; }); 
@@ -344,7 +373,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
     // public moveSpeed : number = .1;
     
-    public puppet : Puppet = new PlaceholderPuppet();
+    public puppet : Puppet; // = new PlaceholderPuppet();
 
     public get playerPuppet() : MPlayerAvatar { return <MPlayerAvatar> this.puppet; }
     
@@ -366,30 +395,31 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
     constructor(
         public _netId : string, 
+        mapPackage : MapPackage,
         _pos ? : Vector3,
         _rot ? : Vector3) 
     {
         super(_netId);
+        this.puppet = new MPlayerAvatar(Vector3.Zero(), _netId, mapPackage);
         this.puppet.setInterpData(new InterpData(_pos, _rot));
-
     }
 
-    static CreateFrom(_netId : string, interpData ? : InterpData) : MNetworkPlayerEntity 
-    {
-        if(interpData) {
-            return new MNetworkPlayerEntity(_netId, BHelpers.Vec3FromPossiblyNull(interpData.position), BHelpers.Vec3FromPossiblyNull(interpData.rotation));
-        } else {
-            return new MNetworkPlayerEntity(_netId, Vector3.Zero(), Vector3.Zero());
-        }
-    }
+    // static CreateFrom(_netId : string, interpData ? : InterpData) : MNetworkPlayerEntity 
+    // {
+    //     if(interpData) {
+    //         return new MNetworkPlayerEntity(_netId, BHelpers.Vec3FromPossiblyNull(interpData.position), BHelpers.Vec3FromPossiblyNull(interpData.rotation));
+    //     } else {
+    //         return new MNetworkPlayerEntity(_netId, Vector3.Zero(), Vector3.Zero());
+    //     }
+    // }
     
 
-    public setupPuppet(pupp : MPlayerAvatar) : void 
-    { 
-        let id = this.puppet.getInterpData();
-        this.puppet = pupp; 
-        this.puppet.setInterpData(id);
-    }
+    // public setupPuppet(pupp : MPlayerAvatar) : void 
+    // { 
+    //     let id = this.puppet.getInterpData();
+    //     this.puppet = pupp; 
+    //     this.puppet.setInterpData(id);
+    // }
     
     public setupShadow(scene : Scene, debugColorIndex : number)
     {
@@ -410,22 +440,45 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
     public clone() : MNetworkPlayerEntity
     {
+        throw new Error(`This shouldn't happen`);
+        /*
         let id = this.puppet.getInterpData();
         let npe = new MNetworkPlayerEntity(this.netId, id.position, id.rotation);
         npe.health.value = this.health;
 
         MNetworkPlayerEntity.CloneTransientData(this, npe);
         return npe;
+        */
+    }
+
+    
+    stamp() : MEntitySnapshot
+    {
+        const nid = new NonInterpolatedData(
+            this.health.val,
+            this.playerPuppet.arsenal.getAmmos(),
+            this.transientStateBook.projectileHitsOnMe.length > 0,
+            this.transientStateBook.firedWeapon
+        );
+        const interp = this.playerPuppet.getInterpData();
+        return new MEntitySnapshot(
+            this.netId,
+            interp,
+            nid
+        );
     }
 
     cloneWithAuthStateOfOtherToInterpData() : MNetworkPlayerEntity
     {
+        throw new Error(`Don't call me`);
+        /*
         let id = this.lastAuthoritativeState;
         let npe = new MNetworkPlayerEntity(this.netId, id.position, id.rotation);
         npe.health.value = this.health;
 
         MNetworkPlayerEntity.CloneTransientData(this, npe);
         return npe;
+        */
     }
 
     public static CloneTransientData(from : MNetworkPlayerEntity, to : MNetworkPlayerEntity) : void
@@ -438,6 +491,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
     // TODO: broadcast ammo changes here
     private Pack(sd : any) 
     {
+        throw new Error(`shouldnt need to Pack NPEs`);
         let id = this.puppet.getInterpData();
         let threeFlagsThenHealth = (0b00011111 & this.health.val);
         threeFlagsThenHealth |= ((this.isDelta ? 1 : 0) << 7);
@@ -450,6 +504,8 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
     private static Unpack(sd : any) : MNetworkPlayerEntity
     {
+        throw new Error(`shouldn't need to unpack NPEs`);
+        /*
         // Byte layout of sd.c (see Pack()):
         // / netId / netId / interp data .../ ... / ammo / 3flags+health /
         let bstr = <string> sd.c;
@@ -459,7 +515,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         
         const id = InterpData.FromByteString(idstr);
         
-        const result = new MNetworkPlayerEntity(netId, id.position, id.rotation);
+        const result = new MNetworkPlayerEntity(netId, id.position, id.rotation); // compile error. in any case, no longer copying NPEs
         
         bstr = bstr.substr(2 + InterpData.SizeFloatBytes() + 1);
         const uint8s = MByteUtils.StringToUInt8s(bstr);
@@ -477,6 +533,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         }
 
         return result;
+        */
     }
     
     // JSON.stringify() looks for this method.
@@ -525,46 +582,46 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
 
 
-    public static fromJSONOLDWAY(joData : any) : MNetworkPlayerEntity
-    {
-        // ******** OLD WAY ******************//
-        // ******** OLD WAY ******************//
+    // public static fromJSONOLDWAY(joData : any) : MNetworkPlayerEntity
+    // {
+    //     // ******** OLD WAY ******************//
+    //     // ******** OLD WAY ******************//
         
-        let joSendData = joData.s; 
-        let npe : MNetworkPlayerEntity;
-        let id : InterpData;
-        if(!joSendData.i) {
-            id = new InterpData();
-        } 
-        else {
-            id = InterpData.FromByteString(joSendData.i);
-        }
-        // ******** OLD WAY ******************//
-        // ******** OLD WAY ******************//
+    //     let joSendData = joData.s; 
+    //     let npe : MNetworkPlayerEntity;
+    //     let id : InterpData;
+    //     if(!joSendData.i) {
+    //         id = new InterpData();
+    //     } 
+    //     else {
+    //         id = InterpData.FromByteString(joSendData.i);
+    //     }
+    //     // ******** OLD WAY ******************//
+    //     // ******** OLD WAY ******************//
 
 
-        npe = new MNetworkPlayerEntity(
-            joSendData.n, 
-            BHelpers.Vec3FromPossiblyNull(id.position), 
-            BHelpers.Vec3FromPossiblyNull(id.rotation));
-            // BHelpers.Vec3FromPossiblyNull(joSendData.interpData.position), 
-            // BHelpers.Vec3FromPossiblyNull(joSendData.interpData.rotation));
+    //     npe = new MNetworkPlayerEntity(
+    //         joSendData.n, 
+    //         BHelpers.Vec3FromPossiblyNull(id.position), 
+    //         BHelpers.Vec3FromPossiblyNull(id.rotation));
+    //         // BHelpers.Vec3FromPossiblyNull(joSendData.interpData.position), 
+    //         // BHelpers.Vec3FromPossiblyNull(joSendData.interpData.rotation));
 
-        // ******** OLD WAY ******************//
-        // ******** OLD WAY ******************//
-        npe.health.takeValue = joSendData.h ? joSendData.h : NOT_HEALTH_DATA;
-        // npe.needsRebase = joData.rb !== undefined;
+    //     // ******** OLD WAY ******************//
+    //     // ******** OLD WAY ******************//
+    //     npe.health.takeValue = joSendData.h ? joSendData.h : NOT_HEALTH_DATA;
+    //     // npe.needsRebase = joData.rb !== undefined;
 
-        let tsBook = MTransientStateBook.ExtractFromObject(joData);
-        if(tsBook) {
-            npe.transientStateBook = tsBook;
-        }
-        // npe.transientStateBook = MTransientStateBook.ExtractFromObject(joData);
+    //     let tsBook = MTransientStateBook.ExtractFromObject(joData);
+    //     if(tsBook) {
+    //         npe.transientStateBook = tsBook;
+    //     }
+    //     // npe.transientStateBook = MTransientStateBook.ExtractFromObject(joData);
 
-        npe.isDelta = joData.d !== undefined;
+    //     npe.isDelta = joData.d !== undefined;
         
-        return npe;
-    }
+    //     return npe;
+    // }
 
 
     //
@@ -599,7 +656,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
     // as jumps on the client (which are animated with more granularity)
     // this would be simple enough if we knew there would never be head bumps...
     
-    // nowhere
+    // nowhere (ClientControlledPE impl is used but not this impl)
     public applyCliCommand (cliCommand : CliCommand) : void
     {
         this.playerPuppet.applyCommandServerSide(cliCommand);
@@ -617,7 +674,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
     {
         console.log(`got hit ${prjInfo}`);
         this.transientStateBook.projectileHitsOnMe.push(prjInfo);
-        this.playerPuppet.showGettingHit(prjInfo);
+        // this.playerPuppet.showGettingHit(prjInfo);
         this.health.takeValue = Math.max(0, this.health.val - prjInfo.damage);
         console.log(`HEALTH: ${this.health.val}`);
     }
@@ -665,12 +722,13 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         }
     }
 
-    applyNonDelta(update : MNetworkPlayerEntity) : void 
+    applyNonDelta(update : NonInterpolatedData) : void 
     {
-        if(this.health.val !== update.health.val)
+        if(this.health.val !== update.health)
             console.log(`My HEALTH: ${this.health.val}`);
 
-        this.health.value = update.health;
+        this.health.takeValue = update.health;
+        this.playerPuppet.arsenal.setAmmos(update.ammos);
     }
 
     // Use only for interpolating other players
@@ -696,14 +754,15 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         this.interpBuffer.push(new OtherPlayerInterpolation(this.lastAuthoritativeState.clone(), +new Date(), debugAckIndex));
     }
 
-    updateAuthState(update : MNetworkEntity) : void 
+    updateAuthState(update : MEntitySnapshot) : void 
     {
-        if(update.isDelta) {
-            throw "This won't happen. not doing deltas at the moment";
-            console.log("up auth state: is delta");
-            this.lastAuthoritativeState.addInPlace(update.puppet.getInterpData());
-        } else {
-            this.lastAuthoritativeState.copyFrom(update.puppet.getInterpData());
+        // if(update.isDelta) {
+        //     throw "This won't happen. not doing deltas at the moment";
+        //     console.log("up auth state: is delta");
+        //     // this.lastAuthoritativeState.addInPlace(update.puppet.getInterpData());
+        // } else 
+        {
+            this.lastAuthoritativeState.copyFrom(update.getMutableInterpData());
         }
     }
 
@@ -741,17 +800,21 @@ export class MNetworkPlayerEntity extends MNetworkEntity
     //
     // client state changes
     // 
-    pushStateChanges(npe : MNetworkPlayerEntity) : void
+    // pushStateChanges(npe : MNetworkPlayerEntity) : void
+    pushStateChanges(nid : NonInterpolatedData) : void
     {
         // handle getting hit
-        while(npe.transientStateBook.projectileHitsOnMe.length > 0)
-        {
-            this.playerPuppet.showGettingHit(<MProjectileHitInfo>npe.transientStateBook.projectileHitsOnMe.shift());
-        }
+        if(nid.wasProjectileHit)
+            this.playerPuppet.showGettingHit();
+        // while(npe.transientStateBook.projectileHitsOnMe.length > 0)
+        // {
+        //     this.playerPuppet.showGettingHit(<MProjectileHitInfo>npe.transientStateBook.projectileHitsOnMe.shift());
+        // }
 
         if(!this.isClientControlledPlayer())
         {
-            if(npe.transientStateBook.firedWeapon === FireActionType.Fired) 
+
+            if(nid.firedWeapon === FireActionType.Fired) 
             {
                 // play weapon fire audio
                 console.log(`kaboom! (source : ${this.netId})`);
@@ -760,7 +823,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
                 this.playerPuppet.arsenal.equipped().playClientSideFireEffects(); // Don't want
                 // MAudio.MAudioManager.Instance.enqueue(MAudio.SoundType.HandGunFire, npe.position);
             }
-            else if(npe.transientStateBook.firedWeapon === FireActionType.Reloaded)
+            else if(nid.firedWeapon === FireActionType.Reloaded)
             {
                 console.log(`reloading (source: ${this.netId})`);
                 this.playerPuppet.arsenal.equipped().playReload();
@@ -772,18 +835,19 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
     public minus(other : MNetworkPlayerEntity) : MNetworkPlayerEntity
     {
-        let id = this.getPuppetInterpDataClone();        
-        let otherID = other.getPuppetInterpDataClone();
-        let delta = id.minus(otherID);
+        throw new Error(`Does this method mean anything anymore?`);
+    //     let id = this.getPuppetInterpDataClone();        
+    //     let otherID = other.getPuppetInterpDataClone();
+    //     let delta = id.minus(otherID);
 
-        // CONSIDER: this constructor causes an unneeded extra copying of interp data.
-        // TODO: just change it so that it takes an optional InterpData arg instead of pos ro separately.
-        let npe = new MNetworkPlayerEntity(this.netId, delta.position, delta.rotation);
-        MNetworkPlayerEntity.CloneTransientData(this, npe);
-        npe.health.value = this.health;
-        npe.isDelta = true;
+    //     // CONSIDER: this constructor causes an unneeded extra copying of interp data.
+    //     // TODO: just change it so that it takes an optional InterpData arg instead of pos ro separately.
+    //     let npe = new MNetworkPlayerEntity(this.netId, delta.position, delta.rotation);
+    //     MNetworkPlayerEntity.CloneTransientData(this, npe);
+    //     npe.health.value = this.health;
+    //     npe.isDelta = true;
 
-        return npe;
+    //     return npe;
     }
 
     public addInPlaceOrCopyNonDelta(delta : MNetworkPlayerEntity) : void

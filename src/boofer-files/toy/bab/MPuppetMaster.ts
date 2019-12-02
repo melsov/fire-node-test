@@ -16,28 +16,28 @@ export interface Puppet
     getBoundsCorners() : Vector3[];
 }
 
-export class PlaceholderPuppet implements Puppet
-{
-    getBoundsCorners(): Vector3[] 
-    {
-        const corners = new Array<Vector3>();
-        const position = this.interpData.position;
-        const ellipsoid = Vector3.One();
-        corners.push(position.clone());
-        corners.push(position.add(ellipsoid.scale(.4)));
-        corners.push(position.add(ellipsoid.scale(-.4)));
-        return corners;
-    }
+// export class PlaceholderPuppet implements Puppet
+// {
+//     getBoundsCorners(): Vector3[] 
+//     {
+//         const corners = new Array<Vector3>();
+//         const position = this.interpData.position;
+//         const ellipsoid = Vector3.One();
+//         corners.push(position.clone());
+//         corners.push(position.add(ellipsoid.scale(.4)));
+//         corners.push(position.add(ellipsoid.scale(-.4)));
+//         return corners;
+//     }
     
-    applyNetEntityUpdateIngoreCollisions(ent : CliTarget) : void {}
-    applyNetworkEntityUpdate(ent: CliTarget): void {}
-    customize(skin: MLoadOut): void {}
+//     applyNetEntityUpdateIngoreCollisions(ent : CliTarget) : void {}
+//     applyNetworkEntityUpdate(ent: CliTarget): void {}
+//     customize(skin: MLoadOut): void {}
 
-    protected interpData : InterpData = new InterpData();
-    getInterpData() : InterpData { return this.interpData; }
-    setInterpData(id : InterpData) : void { this.interpData.copyFrom(id); }
+//     protected interpData : InterpData = new InterpData();
+//     getInterpData() : InterpData { return this.interpData; }
+//     setInterpData(id : InterpData) : void { this.interpData.copyFrom(id); }
 
-}
+// }
 
 export class MLoadOut
 {
@@ -63,36 +63,36 @@ export class MLoadOut
     }
 }
  
-export class MPuppetMaster
-{
-    private puppets : Dictionary<string, Puppet> = new Dictionary<string, Puppet>();
-    constructor(
-        //public scene : Scene,
-        public readonly mapPackage : MLoader.MapPackage
-    )
-    {
+// export class MPuppetMaster
+// {
+//     private puppets : Dictionary<string, Puppet> = new Dictionary<string, Puppet>();
+//     constructor(
+//         //public scene : Scene,
+//         public readonly mapPackage : MLoader.MapPackage
+//     )
+//     {
 
-    }
+//     }
 
-    private makePuppet(ent : MNetworkEntity) : Puppet
-    {
-        switch(ent.entityType)
-        {
-            case EntityType.PLAYER:
-            case undefined:
-            default:                
-                return new MPlayerAvatar(this.mapPackage.scene, new Vector3(), ent.netId, this.mapPackage); 
-        }
-    }
+//     private makePuppet(ent : MNetworkEntity) : Puppet
+//     {
+//         switch(ent.entityType)
+//         {
+//             case EntityType.PLAYER:
+//             case undefined:
+//             default:                
+//                 return new MPlayerAvatar(new Vector3(), ent.netId, this.mapPackage); 
+//         }
+//     }
 
-    public getPuppet(ent : MNetworkEntity) : Puppet
-    {
-        let pup = this.puppets.getValue(ent.netId);
-        if(pup == undefined){
-            pup = this.makePuppet(ent);
-            this.puppets.setValue(ent.netId, pup);
-        }
-        return pup;
-    }
+//     public getPuppet(ent : MNetworkEntity) : Puppet
+//     {
+//         let pup = this.puppets.getValue(ent.netId);
+//         if(pup == undefined){
+//             pup = this.makePuppet(ent);
+//             this.puppets.setValue(ent.netId, pup);
+//         }
+//         return pup;
+//     }
 
-}
+// }

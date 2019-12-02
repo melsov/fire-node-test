@@ -77,20 +77,19 @@ export class MPlayerAvatar implements Puppet
 
     constructor
     (
-        _scene : Scene,
         _startPos : Vector3,
         _name : string,
         mapPackage : MLoader.MapPackage
     )
     {
         // NOTE: root mesh is the only mesh that receives ray casts right now (would we want to cast against children as well? for firing checks?)
-        this.mesh = MeshBuilder.CreateSphere(`${_name}`, {diameter : DEBUG_SPHERE_DIAMETER }, _scene); // happy tsc.mesh will be set elsewhere
+        this.mesh = MeshBuilder.CreateSphere(`${_name}`, {diameter : DEBUG_SPHERE_DIAMETER }, mapPackage.scene); // happy tsc.mesh will be set elsewhere
         Tags.AddTagsTo(this.mesh, GameEntityTags.PlayerObject);
         this.mesh.checkCollisions = true;
         // this.mesh.ellipsoid = new Vector3(1,1,1).scale(DEBUG_SPHERE_DIAMETER); // ellipsoid only for collisions, which we do manually
         this.mesh.position.copyFromFloats(_startPos.x, _startPos.y, _startPos.z);
         this.fireIndicatorMesh = this.setupFireIndicatorMesh(); // make tsc happy
-        this.debugHitPointMesh = MeshBuilder.CreateBox(`dbg-hit-point-${_name}`, { size : .5}, _scene);
+        this.debugHitPointMesh = MeshBuilder.CreateBox(`dbg-hit-point-${_name}`, { size : .5}, mapPackage.scene);
         // this.toggleFireIndicator(false);
 
         this.charMat = new GridMaterial(`main-mat`, mapPackage.scene);
@@ -106,7 +105,7 @@ export class MPlayerAvatar implements Puppet
         for(let i=0; i < this.headFeetCheckRays.length; ++i) { this.headFeetCheckRays[i] = new Ray(new Vector3(), new Vector3(), clearance * 3.1); } // debug shoudl be 1.1 not 3.1
 
         this.arsenal = MArsenal.MakeDefault(mapPackage);
-        this.weaponRoot = new TransformNode(`weaponRoot`, _scene);
+        this.weaponRoot = new TransformNode(`weaponRoot`, mapPackage.scene);
         
         this.setupDefaultWeapon();
 
@@ -235,15 +234,17 @@ export class MPlayerAvatar implements Puppet
         fimMat.mainColor = c;
     }
 
-    public showGettingHit(prjInfo: MProjectileHitInfo) : void 
+    // public showGettingHit(prjInfo: MProjectileHitInfo) : void 
+    showGettingHit() : void 
     {
+        console.log(`pretending show getting hit`);
         this.debugShowHitTimer.start();
         //this.toggleFireIndicator(true);
-        this.fireRayHelper.hide();
-        this.fireRayHelper.ray = prjInfo.ray;
-        this.fireRayHelper.show(this.mesh.getScene(), new Color3(.9, .3, .5));
+        // this.fireRayHelper.hide();
+        // this.fireRayHelper.ray = prjInfo.ray;
+        // this.fireRayHelper.show(this.mesh.getScene(), new Color3(.9, .3, .5));
 
-        this.debugHitPointMesh.position = prjInfo.hitPoint;
+        // this.debugHitPointMesh.position = prjInfo.hitPoint;
     }
 
     private setHeadFeetRays(yDir : number) : void

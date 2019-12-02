@@ -5,10 +5,16 @@ export class MByteUtils
 
     static ByteSizeNumberToString(n:number) : string 
     {
-        let buff = new Uint8Array(1);
-        buff[0]=n;
-        return MByteUtils.Uint8ArrayToString(buff);    
+        return String.fromCharCode(n);
     }
+
+    static ByteSizeNumbersToString(ns : number[]) : string
+    {
+        let result = '';
+        for(let i=0; i<ns.length; ++i) result += String.fromCharCode(ns[i]);
+        return result;
+    }
+
 
     static Uint8ArrayToString(uint8Buffer : Uint8Array) : string
     {

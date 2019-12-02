@@ -132,10 +132,10 @@ export abstract class MAbstractWeapon
 
     protected _totalAmmo : number = this.MaxAmmo(); 
     MaxAmmo() : number { return 10; }
-    get totalAmmo() : number { return this._totalAmmo; }
-
+    
     PerPickupAmmoIncrease() : number { return 4; }
     addAmmo() {  this.setTotalAmmo(this._totalAmmo + this.PerPickupAmmoIncrease()); }
+    get totalAmmo() : number { return this._totalAmmo; }
     setTotalAmmo(_total : number) { this._totalAmmo = Math.min(this.MaxAmmo(), _total); }
 
     protected hasAnotherClip() : boolean { return this.totalAmmo > this.PerClipAmmo(); }
