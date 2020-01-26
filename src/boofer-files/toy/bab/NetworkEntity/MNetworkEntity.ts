@@ -19,7 +19,7 @@ import { MPrintBinaryUtil } from "../../Util/MPrintBinaryUtil";
 import { UILabel } from "../../html-gui/UILabel";
 import { MapPackage } from "../MAssetBook";
 import { MEntitySnapshot, NonInterpolatedData } from "../../MEntitySnapshot";
-
+import { MRingPool } from "../../helpers/ObjectPool/MRingPool";
 
 export abstract class MNetworkEntity
 {
@@ -301,6 +301,16 @@ export class OtherPlayerInterpolation
         if(debugAckIndex) { this.debugAckIndex = debugAckIndex;}
     }
 
+    take(
+        interpData : InterpData,
+        timestamp : number,
+        debubAckIndex : number = -1
+    ) {
+        this.interpData.copyFrom(interpData);
+        this.timestamp = timestamp;
+        this.debugAckIndex = debubAckIndex;
+    }
+
 }
 
 export class CliTarget
@@ -363,7 +373,6 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         MAX_HEALTH_PLAYER, 
         (next)=> { return next !== NOT_HEALTH_DATA; }); 
 
-
     private savedCurrentPos : Nullable<Vector3> = null;
 
     public get shouldDelete() : boolean {return this.transientStateBook.shouldDelete; }
@@ -377,7 +386,11 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
     public get playerPuppet() : MPlayerAvatar { return <MPlayerAvatar> this.puppet; }
     
-    protected interpBuffer : Array<OtherPlayerInterpolation> = new Array<OtherPlayerInterpolation>();
+    // TODO: interpBuffer is an MObjectPool instead
+    // protected interpBuffer = new MRingPool<OtherPlayerInterpolation>(() => {
+    //     return new OtherPlayerInterpolation();
+    // }, 40);
+    protected interpBuffer = new Array<OtherPlayerInterpolation>();
 
     public get isAPlayerEntity() : boolean { return true; }
 
@@ -751,6 +764,10 @@ export class MNetworkPlayerEntity extends MNetworkEntity
     //
     pushInterpolationBuffer(debugAckIndex : number) : void 
     {
+        // const opi = this.interpBuffer.next();
+        // opi.interpData.copyFrom(this.lastAuthoritativeState);
+        // opi.timestamp = +new Date();
+        // opi.debugAckIndex = debugAckIndex;
         this.interpBuffer.push(new OtherPlayerInterpolation(this.lastAuthoritativeState.clone(), +new Date(), debugAckIndex));
     }
 
@@ -781,18 +798,23 @@ export class MNetworkPlayerEntity extends MNetworkEntity
 
         // drop older positions
         while(this.interpBuffer.length >= 2 && this.interpBuffer[1].timestamp <= renderTimestamp) {
+        // while(this.interpBuffer.length >= 2 && this.interpBuffer.at(1).timestamp <= renderTimestamp) {            
             this.interpBuffer.shift();
+            // this.interpBuffer.shrink();
         }
 
         this.debugLastOPIPair = null;
 
         if(this.interpBuffer.length >= 2 && this.interpBuffer[0].timestamp <= renderTimestamp && renderTimestamp <= this.interpBuffer[1].timestamp)
+        // if(this.interpBuffer.length >= 2 && this.interpBuffer.at(0).timestamp <= renderTimestamp && renderTimestamp <= this.interpBuffer.at(1).timestamp)
         {
-            let opi = FromToInterp(this.interpBuffer[0], this.interpBuffer[1], renderTimestamp);
+            const opi = FromToInterp(this.interpBuffer[0], this.interpBuffer[1], renderTimestamp);
+            // let opi = FromToInterp(this.interpBuffer.at(0), this.interpBuffer.at(1), renderTimestamp);
             let ct = new CliTarget();
             ct.interpData.copyFrom(opi.interpData);
             this.applyToPuppet(ct, true); 
 
+            // this.debugLastOPIPair = [this.interpBuffer.at(0), this.interpBuffer.at(1)]; // 
             this.debugLastOPIPair = [this.interpBuffer[0], this.interpBuffer[1]];
         }
     }

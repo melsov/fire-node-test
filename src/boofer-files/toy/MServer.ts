@@ -39,6 +39,8 @@ import { ServerSideEntityManager, MEntityManager } from "./MEntityManager";
 import { MEntitySnapshot } from "./MEntitySnapshot";
 import { stat } from "fs";
 import { MDeleteManager } from "./MDeleteManager";
+import { MPingAlive } from "../MPingAlive";
+import { MUIButton } from "./html-gui/MUIButton";
 
 
 const debugElem : HTMLDivElement = <HTMLDivElement> document.getElementById("debug");
@@ -49,8 +51,8 @@ export const ServerBroadcastTickMillis : number = 500;
 
 const ServerRecalcPingTickMillis : number = 40;
 
-export const MillisPerExpandedSeconds : number = 1800; // a bit longer than standard seconds
-export const AwaitRespawnExpandedSeconds : number = 5;
+export const MillisPerExpandedSeconds : number = 700; // a bit longer than standard seconds
+export const AwaitRespawnExpandedSeconds : number = 4;
 
 export const CLOSE_BY_RELEVANT_RADIUS : number = 4; // silly small for testing
 export const AUDIBLE_RADIUS : number = CLOSE_BY_RELEVANT_RADIUS;
@@ -176,6 +178,8 @@ export class MServer
     private debugUIShowCliClaimDif = new UIDisplayDif.UIDisplayVectorDif("cliClaimDisplay", "cli claim", "claim", "auth state");
     private debugDeltaUps = new UILabel('debugDeltaUps');
 
+    // private debugBecomeUnresponsive = new UI
+
     public static readonly debugShadowRewindUI = new UINumberSet('ShadowRewind', 3, 
         ['broadcast multiple', 'include lag(B)', 'calc w/ ping gauge(B)'], 
         [2, 1, 1]);
@@ -193,7 +197,6 @@ export class MServer
         this.game.init();
         this.currentState = new ServerSideEntityManager(this.game.mapPackage);
         this.debugShadowState = new ServerSideEntityManager(this.game.mapPackage);
-        // this.puppetMaster = new MPuppetMaster(this.game.mapPackage);
 
         // this.currentState.ackIndex = 1; // start with 1 to facilitate checking clients who have never ack'd
 
@@ -220,6 +223,12 @@ export class MServer
         this.debugFirePointMesh.material = fmat;
 
         console.log(`server constructor ends`);
+
+        MPingAlive.StartPing(this.peer.room);
+        new MUIButton('beUnresponsive', () => {
+            MPingAlive.StopPing();
+        });
+
     }
 
     // TODO: mechanism for allowing player to get a load out and agree to enter the game
@@ -343,7 +352,9 @@ export class MServer
     {
         this.simulateTimer.tick(this.game.engine.getDeltaTime(), ()=> {
             // this.EnqueueIncomingCliCommands();
+
             this.processCliCommands();
+
             // this.debugDoTestFire();
             // this.debugPutShadowsInRewindState();
             this.pickupManager.recycle();
@@ -415,7 +426,7 @@ export class MServer
 
             this.confirmWelcomed(qcmd.UID);
             
-            let playerEnt = this.getPlayerEntityFromCurrentState(qcmd.UID); // : (MNetworkPlayerEntity | undefined) = <MNetworkPlayerEntity | undefined> this.currentState.lookup.getValue(qcmd.UID);
+            const playerEnt = this.getPlayerEntityFromCurrentState(qcmd.UID); // : (MNetworkPlayerEntity | undefined) = <MNetworkPlayerEntity | undefined> this.currentState.lookup.getValue(qcmd.UID);
             if(playerEnt !== undefined)
             {
                 playerEnt.applyCliCommandServerSide(qcmd.cmd);
@@ -426,14 +437,15 @@ export class MServer
                 // fake decrement health
                 if(qcmd.cmd.debugTriggerKey) {
                     playerEnt.health.takeValue = playerEnt.health.val - 1;
-                    if(playerEnt.health.val === 0) {
-                        this.deathNotice(playerEnt.netId, playerEnt.netId);
+                    console.log(`test decr health. now: ${playerEnt.health.val}`);
+                    if(playerEnt.health.val <= 0) {
+                        this.killPlayer(playerEnt.netId, playerEnt.netId);
                     }
                 }
             }
 
             // last processed input
-            let cli = this.clients.getValue(qcmd.UID);
+            const cli = this.clients.getValue(qcmd.UID);
             if(cli !== undefined)
             {
                 cli.lastProcessedInput = qcmd.cmd.inputSequenceNumber;
@@ -453,6 +465,11 @@ export class MServer
                 cli.confirmableMessageBook.reinstateUnconfirmed(10);
 
                 if(!cli.canRespawn) { console.log(`can't respawn ${qcmd.UID}`); }
+
+                if(qcmd.cmd.loadOutRequest) // DBUG
+                {
+                    console.log(`${cli.canRespawn} ${cli.loadOut !== null}`)
+                }
 
                 // player loadout request
                 if(qcmd.cmd.loadOutRequest && cli.canRespawn
@@ -638,7 +655,7 @@ export class MServer
                 // maybe will need: a way of hitting objects attached to player (whose names are not identical to netId for player)
                 debugHitAPlayer++;
                 let hitPlayer = <MNetworkPlayerEntity | undefined> this.currentState.lookup.getValue(pickingInfo.pickedMesh.name);
-                if(hitPlayer != undefined && hitPlayer != null) 
+                if(hitPlayer !== undefined && hitPlayer !== null) 
                 {
                     debugHitAPlayer++;
 
@@ -662,15 +679,10 @@ export class MServer
                         // became dead?
                         if(beforeHealth > 0 && hitPlayer.health.val <= 0) 
                         {
-                            this.deathNotice(hitPlayer.netId, firingPlayer.netId);
+                            this.killPlayer(hitPlayer.netId, firingPlayer.netId);
                             
                             // start respawn timer
-                            let hitCli = this.clients.getValue(hitPlayer.netId);
-                            if(hitCli) {
-                                // TODO: save their loadout somewhere
-                                hitCli.loadOut = null; 
-                                // TODO: start respawn timer
-                            }
+                            
                         }
                     }
 
@@ -699,13 +711,21 @@ export class MServer
 
     }
 
-    private deathNotice(deadNetId : string, killerNetId : string)  
+    private killPlayer(deadNetId : string, killerNetId : string)  
     {
         this.confirmableBroadcasts.push(new MExitDeath(
             deadNetId,
             killerNetId,
             new Ray(new Vector3(), Vector3.One(), 1),
             'test murdeded'));
+
+        const longId = this.shortIdBook.getLongId(deadNetId);
+        let hitCli = this.clients.getValue(longId ? longId : "");
+        if(hitCli) {
+            // TODO: save their loadout somewhere
+            hitCli.loadOut = null; 
+            // TODO: start respawn timer
+        }
     }
 
     private findClient(netId : string) : Nullable<CliEntity>
@@ -1014,8 +1034,10 @@ export class MServer
         this.delManager.forEach((longNetId) => 
         {
             const shortId = this.shortIdBook.getShortId(longNetId);
+            console.log(`disconnector: ${longNetId}`);
             if(shortId)
             {
+                console.log(`will destroy ${shortId}`);
                 this.currentState.destroyEntity(shortId);
                 //generate disconnect conf messages
                 dcMessages.push(new MDisconnectedPlayerCM(shortId));
@@ -1066,7 +1088,8 @@ export class MServer
         for(let i=0; i<keys.length; ++i) 
         {
             let cli = this.clients.getValue(keys[i]);
-            if(cli && cli.sendFailCount > 1000) {
+            if(cli && cli.sendFailCount > 30) {
+                console.log(`cli unresponsive: ${cli.remotePlayer.user.UID}`);
                 this.delManager.addLongId(cli.remotePlayer.user.UID);
             }
         }

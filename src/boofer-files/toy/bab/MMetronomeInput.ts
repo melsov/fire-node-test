@@ -1,5 +1,7 @@
 import { MPlayerInput, CliCommand } from "./MPlayerInput";
 import { UINumberSet } from "../html-gui/UINumberSet";
+import { Vector3 } from "babylonjs";
+import * as KeyMoves from './KeyMoves';
 
 //
 // Player who moves back and forth forever for testing
@@ -22,12 +24,13 @@ export class MMetronomeInput extends MPlayerInput
     nextInputAxes() : CliCommand
     {
         let cmd = super.nextInputAxes();
-        cmd.vertical = 0;
-        cmd.jump = false;
+        cmd.horizontal = 0;
+        cmd.jump = Math.random() > .99;
+        cmd.fire = Math.random() < .01 ? KeyMoves.DownUpHold.Down : KeyMoves.DownUpHold.StillUp;
         let totalInterval = (this.intervalMillis + this.restTimeMillis);
         let tpos = cmd.timestamp % totalInterval;
         let dir = (cmd.timestamp % (totalInterval * 2)) > totalInterval ? -1 : 1;
-        cmd.horizontal = (tpos > this.intervalMillis ? 0 : 1) * dir;
+        cmd.vertical = (tpos > this.intervalMillis ? 0 : 1) * dir;
         return cmd;
     }
 }

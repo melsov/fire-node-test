@@ -123,6 +123,11 @@ export class MUtils
         target.x += increment.x; target.z += increment.z;
     }
 
+    static LengthXZSquared(v : Vector3) : number
+    {
+        return v.x * v.x + v.z * v.z;
+    }
+
     //
     // Returns a 'shadow' vector on the plane represented by normal
     // assume normal is normalized

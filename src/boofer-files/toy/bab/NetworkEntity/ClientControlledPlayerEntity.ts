@@ -23,9 +23,18 @@ export class ClientControlledPlayerEntity extends MNetworkPlayerEntity
     } 
 
     //
+    // i.e. jump. We don't rewind jumps (client controls them completely--a messed up situation)
+    // this method is only called during prediction (when first applying keyboard input)
+    //
+    applyPredictionOnlyCommand(cmd : CliCommand) : void
+    {
+        this.playerPuppet.commandJump(cmd);
+    }
+
+    //
     // applying movement by updating cli targets and send data's position
     //
-    public applyCliCommand(cliCommand : CliCommand) : void
+    applyCliCommand(cliCommand : CliCommand) : void
     {
         this.playerPuppet.pushCliTargetWithCommand(cliCommand);
     } 
@@ -64,7 +73,7 @@ export class ClientControlledPlayerEntity extends MNetworkPlayerEntity
     //     this.statusHUD.update();
     // }
 
-    public apply(ent : MNetworkPlayerEntity) : void
+    apply(ent : MNetworkPlayerEntity) : void
     {
         throw new Error(`hopefully never called`);
         // if(ent.isDelta) // wrong because the cli target is never rewound 
@@ -81,8 +90,9 @@ export class ClientControlledPlayerEntity extends MNetworkPlayerEntity
 
     }
 
-    public renderTick(dt : number)
+    renderTick(dt : number)
     {
+        this.statusHUD.update();
         this.playerPuppet.renderLoopTick(dt); 
     }
 

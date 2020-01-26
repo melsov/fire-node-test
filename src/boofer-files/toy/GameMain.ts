@@ -217,14 +217,13 @@ export class GameMain
                 faceColors: this.funColors
             }, this.scene);
             box.position.copyFrom(pos);
+            box.freezeWorldMatrix();
 
             Tags.AddTagsTo(box, GameEntityTags.Terrain);
 
             let boxMat = new GridMaterial(`box-mat-${i}`, this.scene);
             boxMat.gridRatio = .25;
             box.material = boxMat;
-
-            
         }
 
         let floor = MeshBuilder.CreateBox('box-floor', {
@@ -233,6 +232,7 @@ export class GameMain
             depth : long * 200
         }, this.scene);
         floor.position = new Vector3(0, -h, 0);
+        floor.freezeWorldMatrix();
         Tags.AddTagsTo(floor, GameEntityTags.Terrain);
         let flMat = new GridMaterial('floor-mat', this.scene);
         flMat.gridRatio = .5;

@@ -32,4 +32,25 @@ const AppendDefualtDivId = "buttons";
         container.appendChild(div);
         return new NodeFriendlyDivElement(div); // div;
     }
+
+    // Not safe for node!
+    export function FindOrCreateButtonNodeUnsafe(newId : string, container ? : any) : HTMLButtonElement
+    {
+        let b = <HTMLButtonElement>document.getElementById(newId);
+        if(!b) {
+            b = CreateButtonNodeUnsafe(container, newId);
+        }
+        return b;
+    }
+    export function CreateButtonNodeUnsafe(container ? : any, newId ? : string) : HTMLButtonElement
+    {
+        let button = document.createElement("button");
+        
+        if(newId) { button.id = newId; }
+        if(!container) { 
+            container = <HTMLDivElement> document.getElementById(AppendDefualtDivId);
+        }
+        container.appendChild(button);
+        return button;
+    }
 // }

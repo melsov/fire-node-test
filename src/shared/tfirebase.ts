@@ -17,12 +17,16 @@ export class FBUser
 {
 
     public isServer : boolean = false;
+    public isClient : boolean = true;
+
     constructor(
         public UID : string,
         public displayName : string,
         public color : number
     )
     {}
+
+    get isAListenServer() : boolean { return this.isServer && this.isClient; }
 
     public debug() {
         return `tF.User: ${this.UID}, name: ${this.displayName}, color: ${this.color}`;

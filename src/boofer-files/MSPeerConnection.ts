@@ -87,7 +87,7 @@ export class MSPeerConnection
         this.sendChannel = this.localConnection.createDataChannel('sendDataChannel', sendChannelParams);
         logMSPEER("send channel undefined? " + (this.sendChannel == undefined));
 
-        this. localConnection.onicecandidate = (event => {
+        this.localConnection.onicecandidate = (event => {
             event.candidate ? 
                 this. sendMessage(this. yourId, JSON.stringify({'ice' : event.candidate})) : 
                 logMSPEER('sent all ice'); 
@@ -145,9 +145,9 @@ export class MSPeerConnection
                 var msg = JSON.parse(data.val().message);
                 var sender = data.val().sender;
 
-                logMSPEER("got msg: from: " + ( sender== this. yourId? "myself" : sender ) + " msg: " + data.val().message);
+                logMSPEER("got msg: from: " + ( sender== this.yourId? "myself" : sender ) + " msg: " + data.val().message);
 
-                if(sender != this. yourId) // should always be true
+                if(sender != this.yourId) // should always be true
                 {
                     if(msg.ice != undefined)
                     {

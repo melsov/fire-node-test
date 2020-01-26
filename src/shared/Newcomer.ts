@@ -3,6 +3,11 @@
 // DONT edit in that project; only edit if you're
 // in abfrab-func5
 //
+export enum HostRequestType
+{
+    NoPreference, HostListenServer, HostServerOnly, DebugHostOnlyIfNeedHost, ClientOnly
+}
+
 export class Newcomer
 {
     static hi() { return "hello"; }
@@ -11,7 +16,8 @@ export class Newcomer
 
     constructor(
         public name : string,
-        public slogan : string = "be strong in stealth"
+        public slogan : string = "be strong in stealth",
+        public hostRequest : HostRequestType = HostRequestType.NoPreference
     ) 
     {}
 
@@ -24,7 +30,8 @@ export class RoomAssignment
 
     constructor(
         public roomName : string,
-        public shouldBeLS : boolean
+        public shouldBeLS : boolean,
+        public serverOnly : boolean
     ) 
     {}
 

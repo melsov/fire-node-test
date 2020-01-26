@@ -47,4 +47,8 @@ export class UILabel
         this.labelDiv.style.display = b ? "initial" : "none";
     }
 
+    set backgroundColor(c : string) {
+        this.labelDiv.style.backgroundColor = c;
+    }
+
 }

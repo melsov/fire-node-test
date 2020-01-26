@@ -9,9 +9,9 @@ export class DebugHud
         let _container = new NodeFriendlyDivElement(document.getElementById(divID)); // <HTMLElement | null> document.getElementById(divID);
         if(_container == null)
         {
-            _container = new NodeFriendlyDivElement( document.createElement("div"));
+            _container = new NodeFriendlyDivElement(document.createElement("div"));
             _container.id = divID;
-        } 
+        }
         this.container = _container;
 
         //test

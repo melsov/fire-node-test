@@ -47,6 +47,7 @@ a touch / tap interface: (game seems to run on my old iphone) <-- use JQuery PEP
 
 resolve firebase firestore crashing because (we think) we redefine 'window' in the node version of the app
 
+Possible duplicate: give server entities a way to not use cosmetic assets (e.g. audio / MAudioManager)
 
 // Thought: server migration. It can happen frequently ish...might help guard against cheating...
 // Servers constructors can download world state?

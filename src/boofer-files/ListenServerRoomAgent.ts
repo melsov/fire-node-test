@@ -102,36 +102,33 @@ export class ListenServerRoomAgent
         this.debugPlayerListDiv.innerHTML = names.toString();
     }
 
-    private debugUseFireStore() 
-    {
-        // console.log(`use firestore see if this crashes`);
-        // let db = firebase.firestore();
-        // let playersDoc = db.collection("nothing").doc("also-nothing").set({ "still-nothing" : "nothing" });
-    }
-
     constructor(
         public readonly room : string, 
         public readonly user : tfirebase.FBUser, 
         public  onGotPlayerCount : (isServer : boolean) => void
     ) 
     {
-        this.debugUseFireStore();
-    
         this.debugPlayerListDiv = new NodeFriendlyDivElement(document.getElementById('debugPlayerList'));
         this.debugPlayerCount = new NodeFriendlyDivElement(document.getElementById('debugPlayerCount'));
         this.debugIsServer = new NodeFriendlyDivElement( document.getElementById('debugIsServer'));
 
         // push our user to players
-        // this.userDBRef = firebase.database().ref(this.playersRef).push(this.user); 
         this.userDBRef = firebase.database().ref(`${this.playersRef}/${this.user.UID}`);
-        this.userDBRef.set(this.user).then(() => { console.log("the keyy: " + this.userDBRef.key)});
-        
-        // this.userDBRef.then(() => { console.log("here's the key: " + this.userDBRef.key); });
+        this.userDBRef.set(this.user).then(() => { console.log("the key: " + this.userDBRef.key) });
     }
     
-    public init()
+    static NodeLog(str : string) {
+        if(MDetectNode.IsRunningInNode()) {
+            console.log(str);
+        }
+    }
+
+    init()
     {
         
+        // NOTE: sort of no point to updating player count?
+        // NOT used to determine isServer anymore...
+
         // use a transaction to limit num players per room
         // Atomically update room count
         firebase.database().ref(this.roomCountRef).transaction((count) => {
@@ -164,7 +161,8 @@ export class ListenServerRoomAgent
             // })
             // .then(() => 
             {
-                
+             
+                ListenServerRoomAgent.NodeLog(`on got plyr count`);
                 this.onGotPlayerCount(this.user.isServer);
                 this.dLabel = `after set user again`;
 
@@ -184,6 +182,7 @@ export class ListenServerRoomAgent
                 // this.handshake();
 
             }
+            ListenServerRoomAgent.NodeLog('done with then');
             //); // end of set isServer
         }); // end of count transaction .then()
 
@@ -323,9 +322,14 @@ export class ListenServerRoomAgent
 
     debugWipeEntireFirebaseDB(callback : () => void) 
     {
-        firebase.database().ref().remove().then((snap) => {
-            callback();
-        });
+        try {
+            firebase.database().ref().remove().then((snap) => {
+                callback();
+            });
+        } 
+        catch(err) {
+            console.log(`err wiping the fb db: ${err}`);
+        }
     }
 
     

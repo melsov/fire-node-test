@@ -82,14 +82,14 @@ export class MSkeletonAnimator
 
     isPlaying(actionName : string) : boolean
     {
-        let grp = this.getAnimationGroup(actionName);
+        const grp = this.getAnimationGroup(actionName);
         if(grp === undefined) throw new Error(`no anim group for action name: ${actionName}`);
         return grp.animationGroup.isPlaying;
     }
 
     play(actionName : string, loop ? : boolean) : void 
     {
-        let aa = this.getAnimationGroup(actionName);
+        const aa = this.getAnimationGroup(actionName);
         if(aa === undefined) {
             return;
         }
@@ -100,7 +100,7 @@ export class MSkeletonAnimator
 
     restart(actionName : string, loop ? : boolean) : void 
     {
-        let aa = this.getAnimationGroup(actionName);
+        const aa = this.getAnimationGroup(actionName);
         if(!aa) { return; }
         if(aa.animationGroup.isPlaying) { aa.animationGroup.stop(); }
         aa.animationGroup.play();
@@ -109,7 +109,7 @@ export class MSkeletonAnimator
 
     playIfNotAlready(actionName : string, loop ? : boolean) : void
     {
-        let aa = this.getAnimationGroup(actionName);
+        const aa = this.getAnimationGroup(actionName);
         if(aa.animationGroup.isPlaying) { return; }
         aa.animationGroup.play();
         this.playAudios(aa);
@@ -117,14 +117,14 @@ export class MSkeletonAnimator
 
     stop(actionName : string) : void 
     {
-        let aa = this.getAnimationGroup(actionName);
+        const aa = this.getAnimationGroup(actionName);
         if(aa === undefined) {return; }
         aa.animationGroup.stop();
     }
 
     togglePlay(actionName : string, loop ? : boolean) : void 
     {
-        let aa = this.getAnimationGroup(actionName);
+        const aa = this.getAnimationGroup(actionName);
         if(aa === undefined) { return; }
 
         if(aa.animationGroup.isPlaying) { aa.animationGroup.stop(); }
@@ -133,6 +133,11 @@ export class MSkeletonAnimator
     
     private playAudios(animAction : MAnimAction) : void 
     {
+        // TODO: arrange for cosmetic effects to not happen on the server
+        // DUCT TAPE. Server shouldn't be trying to play audio at all
+        if(!MAudio.MAudioManager.Instance) { 
+            return;
+        }
         //enqueue any audio
         animAction.timelineAudios.forEach((timelineAudio) => {
             // TODO: wait for offset seconds if not zero

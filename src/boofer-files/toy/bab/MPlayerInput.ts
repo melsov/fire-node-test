@@ -3,6 +3,7 @@ import { MToggle } from "../helpers/MToggle";
 import { MLoadOut } from "./MPuppetMaster";
 import { InterpData } from "./NetworkEntity/MNetworkEntity";
 import * as KeyMoves from "./KeyMoves";
+import { UIDebugBoolean } from "../html-gui/UIDebugBoolean";
 
 
 export class CliCommand
@@ -99,6 +100,9 @@ export class MPlayerInput
 
     public readonly rightMouseToggle : MToggle = new MToggle(false);
 
+
+    private debugJumpKey : UIDebugBoolean = new UIDebugBoolean("dbg-jump-key", "jump-key", "#FFAAAA", "#999999");
+
     constructor(useAltKeySet : boolean)
     {
         if(useAltKeySet) this.keySet = KeySet.MakeAltKeySet();
@@ -183,13 +187,20 @@ export class MPlayerInput
     // return a (cloned) object representing time keys held down (axis scalars)
     // plus a sequence number
     
-    // it is these that should be applied by the MNetEntity on server or during interpolation
-    nextInputAxes() : CliCommand
+    private updateDebugIndicators()
     {
+        this.debugJumpKey.setValue(this._inputKeys.jump);
+    }
+
+    // these should be applied by the MNetEntity on server or during interpolation
+    nextInputAxes() : CliCommand 
+    {
+        this.updateDebugIndicators();
+
         // calc time since last call to this func
-        let now : number = +new Date();
-        let last : number = (this.lastGetAxesTime == undefined) ? now : this.lastGetAxesTime;
-        let dt : number = now - last;
+        const now : number = +new Date();
+        const last : number = (this.lastGetAxesTime == undefined) ? now : this.lastGetAxesTime;
+        const dt : number = now - last;
         this.lastGetAxesTime = now;
 
         let cc = new CliCommand();
@@ -198,10 +209,10 @@ export class MPlayerInput
         // we sometimes (seem to) miss key events
         // when canvases loses focus
         if(now - this.lastKeyboardEventTime > KB_EVENT_TIMEOUT_MILLIS) {
-            this._inputKeys.reset();
+            // this._inputKeys.reset(); // <-- probably causes weird extra jumps?
         }
 
-        cc.horizontal = (this._inputKeys.left ? -1 : (this._inputKeys.right ? 1 : 0)) * dt;
+        cc.horizontal = (this._inputKeys.left ? -1 : (this._inputKeys.right ? 1 : 0)) * dt; // I FORGET: why scaling be dt here?
         cc.vertical = (this._inputKeys.back ? -1 : (this._inputKeys.fwd ? 1 : 0)) * dt;
         
         cc.fire = this._inputKeys.fire;

@@ -11,7 +11,8 @@ import { Checkbox } from 'babylonjs-gui';
 import * as tfirebase from "../shared/tfirebase"; // { tfirebase } from './MPlayer';
 import { MLocalPeer } from './MPeer';
 import { MDetectNode } from '../MDetectRunningInNode';
-import { Newcomer, RoomAssignment } from '../shared/Newcomer';
+import { Newcomer, RoomAssignment, HostRequestType } from '../shared/Newcomer';
+import { MFFuncLoggerUI } from './toy/html-gui/MFFuncLoggerUI';
 
 let localPeer : MLocalPeer;
 let localClientPeerListenServer : MLocalPeer;
@@ -22,6 +23,8 @@ var _wantListenServer : boolean = false;
 
 const killGameButton = <HTMLButtonElement> document.getElementById("kill-game");
 
+var funcLogger;
+
 export function init()
 {
     SetupClient();
@@ -29,6 +32,9 @@ export function init()
 
 function SetupClient()
 {
+ 
+    funcLogger = new MFFuncLoggerUI();
+
     firebase.auth().signInAnonymously().catch(err  => {
         console.warn("Sign in err: " +  err.code + " :  " + err.message);
     });
@@ -37,7 +43,8 @@ function SetupClient()
         if(usr){
             
             // TEST SEND AUTHORIZED HTTPS REQ
-            const startFunctionsRequest = () => {
+            const startFunctionsRequest = () => 
+            {
                 let helloUserUrl = 'https://us-central1-webrtcrelay2.cloudfunctions.net/app';
                 helloUserUrl += '/hello';
                 usr.getIdToken().then((token) => {
@@ -65,41 +72,55 @@ function SetupClient()
                 console.log(`fb auth user: chars: ${usr.uid.length} . ${usr.uid} `);
                 // for testing, use a fake UID (firebase.Auth gives same UID per browser)
                 fbaseUser = fakeUserConfig(usr.uid);  // usr;
+
+                // TODO: seems like, if two computers connect at the same-ish time,
+                // our match maker makes both of them servers (unless one of them requests client-only)
                 
                 // TODO: allow clients to opt in to hosting
-                // TODO: maintain a list of available rooms
-                // need a mechanism for detecting server health
-                // a ping every 5 seconds or something?
                 
                 // clients can just hit a big 'play' button (room chosen for them)
                 // or choose a 'host/server'
                 
-                // add an entry to 'newcomers' 
-                // await a 'response' from server: an entry in 'assignment/{our(fake)uid}'
-                // the response will contain our room and whether we're the server.
-                let raPath = `${RoomAssignment.dbRoot}/${fbaseUser.UID}`;
-                firebase.database().ref(raPath).on('value', (snap) => 
-                {
-                    let roomAssignment = <RoomAssignment> snap.val();
-                    if(roomAssignment) {
-                        console.log(`got r assignment: ${Object.keys(roomAssignment)}`);
-
-                        firebase.database().ref(raPath).off();
-                        EnterLobby(roomAssignment, token); 
-                    } 
-                    else { console.log(`null room assigment. i'll keep waiting`); }
-                });
                 
-                let newcomer = new Newcomer(fbaseUser.UID, "s'blood");
-                // firebase.database().ref(`${Newcomer.dbRoot}`).push(newcomer)
+
+                // TODO: be a bit more formal / thoughtful about determining 
+                // their HostRequestType
+                let hostRequest = (MDetectNode.GetCmdLineArg('node-client')) ? 
+                    HostRequestType.ClientOnly :  
+                    HostRequestType.DebugHostOnlyIfNeedHost; // Debug convenience: first newcomer is a server only 
+                
+                // add an entry to 'newcomers' 
+                const newcomer = new Newcomer(
+                    fbaseUser.UID, 
+                    "s'blood", 
+                    hostRequest); 
+
                 const newcomerPath =`${Newcomer.dbRoot}/${fbaseUser.UID}`;
-                firebase.database().ref(newcomerPath).set(newcomer) // push(newcomer)
+                firebase.database().ref(newcomerPath).set(newcomer) 
                 .then(() => {
                     // immediately remove
                     firebase.database().ref(newcomerPath).remove().catch(err => { console.log(`err removing new comer ref`); })
                 }).catch(err => {
                     console.log(`err adding newcomer ${err}`);
                 });
+
+                // await a 'response' from server: an entry in 'assignment/{our(fake)uid}'
+                // the response will contain our room and whether we're the server.
+                // we trigger the response by registering a 'NewComer' above
+                const raPath = `${RoomAssignment.dbRoot}/${fbaseUser.UID}`;
+                firebase.database().ref(raPath).on('value', (snap) => 
+                {
+                    let roomAssignment = <RoomAssignment> snap.val();
+                    if(roomAssignment) 
+                    {
+                        console.log(`got r assignment: ${Object.keys(roomAssignment)}`);
+                        
+                        firebase.database().ref(raPath).off();
+                        EnterLobby(roomAssignment, token); 
+                    } 
+                    else { console.log(`null room assigment. i'll keep waiting`); }
+                });
+
             }); // end getIdToken
                 
         } else { 
@@ -110,11 +131,18 @@ function SetupClient()
 
 function EnterLobby(roomAssignment : RoomAssignment, token : string)
 {
-    fbaseUser.isServer = roomAssignment.shouldBeLS;
-    localPeer = new MLocalPeer(roomAssignment.roomName, fbaseUser, token, (isServer : boolean) => {
+    // COMPLAINT: dealing with all of the cli / server / listen server conditions
+    // all duct-taped onto each other at various points...is quite a muddle
+    // NONETHELESS: there's a new condition in town! (for testing) 'NodeClient'!
 
+    fbaseUser.isServer = roomAssignment.shouldBeLS || roomAssignment.serverOnly;
+    fbaseUser.isClient = !roomAssignment.serverOnly;
+
+    localPeer = new MLocalPeer(roomAssignment.roomName, fbaseUser, token, (isServer : boolean) => 
+    {
         // add a client for listen server
-        if(fbaseUser.isServer /*&& _wantListenServer */ && !MDetectNode.IsRunningInNode()) {
+        if(fbaseUser.isAListenServer /*&& _wantListenServer */ && !MDetectNode.IsRunningInNode()) 
+        {
             let userClone = fbaseUser.clone();
             userClone.isServer = false;
             userClone.UID = `${userClone.UID}-LS`;

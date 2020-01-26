@@ -34,6 +34,9 @@ import { MMetronomeInput } from "./bab/MMetronomeInput";
 import { MPickupManager } from "./bab/NetworkEntity/Pickup/MPickupManager";
 import { CliSideEntityManager } from "./MEntityManager";
 import { MEntitySnapshot } from "./MEntitySnapshot";
+import { MDetectNode } from "../../MDetectRunningInNode";
+
+import * as KeyMoves from "./bab/KeyMoves";
 
 
 
@@ -130,6 +133,9 @@ export class MClient
             this.fromServer.outOfOrderSkipRange = ns[3];
         });
 
+
+    private debugIsAMetronome : boolean = false;
+
     //
     // CONSIDER: maybe the client doesn't do much
     // until it gets an update from the server
@@ -150,8 +156,9 @@ export class MClient
         this.clientViewState = new CliSideEntityManager(this.game.mapPackage);
         
         this.playerEntity = new ClientControlledPlayerEntity(welcomePackage.shortId, this.game.mapPackage); // MNetworkPlayerEntity(this.user.UID);
-        // this.puppetMaster = new MPuppetMaster(this.game.mapPackage); // this.game.scene);
-        this.input = debugPlayerArrivalNumber === 1 && MUtils.QueryStringContains('metronome') ? new MMetronomeInput(false) : new MPlayerInput(false);
+
+        this.debugIsAMetronome = MDetectNode.IsRunningInNode() || MUtils.QueryStringContains('metronome') 
+        this.input = this.debugIsAMetronome ? new MMetronomeInput(false) : new MPlayerInput(false);
         this.input.useScene(this.game.canvas, this.game.scene);
 
         this.pickupManager = MPickupManager.CreateTestManager(this.game.mapPackage); // new MPickupManager(55, 4, .5, this.game.mapPackage);
@@ -164,7 +171,7 @@ export class MClient
         this.clientViewState.lookup.setValue(this.playerEntity.netId, this.playerEntity);
         // this.clientViewState.setEntity(this.playerEntity.netId, this.playerEntity);
         
-        MUtils.Assert(this.playerEntity.playerPuppet.mesh != undefined, "surprising!");
+        MUtils.Assert(this.playerEntity.playerPuppet.mesh !== undefined, "surprising!");
         
         //customize puppet
         let skin = MLoadOut.DebugCreateLoadout(this.NoLongerMeaningfulClientNumber);
@@ -200,15 +207,27 @@ export class MClient
         this.debugHudInfo = new DebugHud(this.NoLongerMeaningfulClientNumber == 0 ? "cli-debug-a-info" : "cli-debug-b-info");
         this.debugHudInfo.show(this.user.UID);
 
-        this.lobbyUI.handleEnterGamePressed = (ev: MouseEvent) => {
-            this.handleEnterGamePressed();
 
-            MAudio.MAudioManager.Instance.enable(true);
-        }
-
-       
+       this.awaitEnterGamePressed();
     }
 
+    private awaitEnterGamePressed() 
+    {
+        // if we're a 'metronome' (articially unintelligent monkey client)
+        // just jump into the game
+        if(this.debugIsAMetronome)
+        {
+            this.handleEnterGamePressed();
+            if(!MDetectNode.IsRunningInNode())
+                MAudio.MAudioManager.Instance.enable(true);
+            return;
+        }
+
+        this.lobbyUI.handleEnterGamePressed = (ev: MouseEvent) => {
+            this.handleEnterGamePressed();
+            MAudio.MAudioManager.Instance.enable(true);
+        }
+    }
    
 
     private setupManagers() : void 
@@ -231,8 +250,9 @@ export class MClient
             return;
         }
 
-        // TODO: trigger send lo from an enter game button
-        // TODO: show hide LOut UI
+        // TODO: fix: respawning players are stuck in some kind of 'send lo req' purgatory
+        // CONSIDER: at least in test deaths, health allowed to become negative. 
+        // leads to bizarre health reports. Not sure if this matters. MAYBE: make sure death happens only once per death?
 
         if(this.stageOfLifeType === StageType.DeadConfigureLoadout && next === StageType.Alive) {
             console.log(`DeadCL to ALIVE`);
@@ -264,6 +284,7 @@ export class MClient
     {
         let handle = -1;
         let remaining = MServer.AwaitRespawnExpandedSeconds;
+        this.lobbyUI.showCountDown(remaining);
         handle = window.setInterval(() => {
             console.log(`bardo: ${remaining}`);
             this.lobbyUI.showCountDown(remaining);
@@ -361,22 +382,78 @@ export class MClient
         this.game.tearDown();
         // clearInterval(this.serverTickProcessHandle);
     }
+
+    private static MonkeyWanderRadius = 11;
+    private static _MWRSq = MClient.MonkeyWanderRadius * MClient.MonkeyWanderRadius;
+
+    private debugMonkeyClientInput() : CliCommand
+    {
+        const command = new CliCommand();
+        command.vertical = 1.0;
+
+        const pos = this.playerEntity.position;
+        const distSq = MUtils.LengthXZSquared(pos); // ground dist from the origin
+        if(distSq < MClient._MWRSq)
+        {
+            command.forward = pos.normalizeToNew();
+        }
+        else 
+        {
+            const circularFwd = Vector3.Cross(Vector3.Up(), pos).normalizeToNew();
+            command.forward = circularFwd;
+            // const homing = distSq / MClient._MWRSq;
+            // const fwd = this.playerEntity.playerPuppet.mesh.forward;
+            // const turn = Vector3.Cross(fwd, Vector3.Up());
+            // turn.addInPlace(turn.scale(-2.0 * Math.random() * homing));
+            // turn.scaleInPlace(1 - 2 * Math.random() * homing);
+    
+            // command.forward = fwd.add(turn);
+            // command.forward.normalize();
+        }
+
+        command.jump = Math.random() > .99;
+        command.fire = Math.random() < .01 ? KeyMoves.DownUpHold.StillUp : KeyMoves.DownUpHold.Down;
+
+        command.timestamp = +new Date();
+
+        return command;
+    }
+
+    private getInput() : CliCommand
+    {
+        let command : CliCommand;
+        if(this.debugIsAMetronome) 
+        {
+            // TODO: generate some more interesting movements
+            // perhaps circles generated from cross products. 
+            // the further out they get the closer 'right' vector
+            // points to the center
+            command = this.debugMonkeyClientInput();
+
+        }
+        else 
+        {
+            command = this.input.nextInputAxes();
+            command.forward = this.fpsCam.forward();
+            command.rotation = this.game.camera.rotation.clone(); // ? not fps cam rotation?
+        }
+
+        return command;
+    }
     
     private processInputs() : void
     {
-        let command = this.input.nextInputAxes(); // MakeFakeCommand();
+        const command = this.getInput(); // this.input.nextInputAxes();  
+        command.inputSequenceNumber = this.inputSequenceNumber++;
         command.lastWorldStateAckPiggyBack = this.clientViewState.ackIndex;
         // if(!command.hasAMove) { 
         //     this.send(CommandToString(command)); // // still send a cmd for ack index // TODO: compress in this case
         //     return; 
         // }
-        
-        command.inputSequenceNumber = this.inputSequenceNumber++;
-        command.forward = this.fpsCam.forward();
-        command.rotation = this.game.camera.rotation.clone(); // ? not fps cam rotation?
 
         if (this.clientSidePrediction.checked)
         {
+            this.playerEntity.applyPredictionOnlyCommand(command);
             this.playerEntity.applyCliCommand(command); // with collisions
             this.playerEntity.createImmediateEffectsFromInput(command);
         }
@@ -424,9 +501,7 @@ export class MClient
     {
         while(true)
         {
-
-            
-            let msg = this.fromServer.dequeue(); // this.peerConnection.receiveChannel.receive();
+            let msg = this.fromServer.dequeue(); 
             if(msg === null || msg === undefined || this.justIgnoreServer.checked)
             {
                 break;
@@ -695,7 +770,9 @@ export class MClient
             let plent = pl.getPlayerEntity();
             if(plent == undefined) { continue; }
 
-            if(ed.deadNetId === this.user.UID) {
+            console.log(`player ${plent.netId} died`);
+            if(ed.deadNetId === this.playerEntity.netId) {
+                console.log(`we died`);
                 // we died
                 this.handleLifeTransition(StageType.Bardo);
                 // TODO: mid screen bold announcement

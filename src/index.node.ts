@@ -9,6 +9,7 @@ global.XMLHttpRequest = require('xhr2').XMLHttpRequest;
  
 RTCPeerConnection = require('wrtc').RTCPeerConnection;
 RTCSessionDescription = require('wrtc').RTCSessionDescription;
+RTCIceCandidate = require('wrtc').RTCIceCandidate;
 
 // get a DOM
 const jsdom = require('jsdom');
@@ -21,27 +22,33 @@ const DOM = new JSDOM(idxhtml, {
   runScripts: "outside-only" // don't think we need these options actually
 });
 
-// cheese: define win, doc, loc, HTMLElement
-// WANT
+// cheese: define win, doc, loc, HTMLElement; so node doesn't feel left out.
 window = DOM.window;
 document = DOM.window.document;
 location = window.location;
 HTMLElement = window.HTMLElement;
 
 // Start an express server
-// so that (for example) AssetManager requests work
-function FindAPortForGETServer() {
-  return 8000;
-}
-const express = require('express');
-const app = express();
-const PORT_EXPRESS = FindAPortForGETServer();
-app.get('/', (req, res) => { res.send('hi world'); });
-app.use(express.static('./'));
+// so that (for example) AssetManager requests work.
+// Avoid spinning up express if it's already running (on another node process, presumably the server process on localhost)
+if(!process.argv.includes('node-client'))
+{
+  function FindAPortForGETServer() { return 8000; }
+  
+  const express = require('express');
+  const app = express();
+  const PORT_EXPRESS = FindAPortForGETServer();
 
-app.listen(PORT_EXPRESS, () => {
-  console.log(`listening on ${PORT_EXPRESS}`);
-})
+  console.log(`spin up express on ${PORT_EXPRESS}`);
+ 
+  app.get('/', (req, res) => { res.send('hi world'); });
+  app.use(express.static('./'));
+
+  app.listen(PORT_EXPRESS, () => {
+    console.log(`listening on ${PORT_EXPRESS}`);
+  })
+
+}
 
 // game start
 const booferIndex = require('./boofer-files/index');

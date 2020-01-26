@@ -123,6 +123,7 @@ export abstract class MAbstractWeapon
             this.handleReloadFinished();
         });
         
+        this._uiTotalAmmo = this._totalAmmo;
     }
  
 
@@ -138,14 +139,31 @@ export abstract class MAbstractWeapon
     get totalAmmo() : number { return this._totalAmmo; }
     setTotalAmmo(_total : number) { this._totalAmmo = Math.min(this.MaxAmmo(), _total); }
 
+    // private _uiTotalAmmo : number = 0;
+    public getUIAmmo = () => { return this._totalAmmo; }
+    // get uiTotalAmmo() : number { return this._uiTotalAmmo; }
+
     protected hasAnotherClip() : boolean { return this.totalAmmo > this.PerClipAmmo(); }
 
-    protected decrementAmmoFillClip() : void 
+    private refill : number = 0;
+
+    private decrementTotalAmmo()
     {
-        let refill = Math.min(this.PerClipAmmo(), this._totalAmmo);
+        const refill = Math.min(this.PerClipAmmo(), this._totalAmmo);
         this._totalAmmo -= refill;
+        this.refill = refill;
+    }
+
+    // protected decrementAmmoFillClip() : void 
+    // {
+        
+    // }
+    
+    private consumeRefill()
+    {
         // odd case where they are pretty low but have some ammo in the clip too (let's not worry too much)
-        this._clipAmmo = Math.min(this._clipAmmo + refill, this.PerClipAmmo()); 
+        this._clipAmmo = Math.min(this._clipAmmo + this.refill, this.PerClipAmmo()); 
+        this.refill = 0;
     }
 
     //
@@ -167,16 +185,27 @@ export abstract class MAbstractWeapon
 
     protected handleReloadFinished() : void 
     {
-        this.decrementAmmoFillClip();
+        this.consumeRefill();
+        this.getUIAmmo = () => { return this._totalAmmo; }
+        // this.decrementAmmoFillClip();
+    }
+
+    protected isReloading() {
+        return this.effects.animations.skelAnimator.isPlaying("Reload");
     }
 
     // play reload. triggers fill clip callback
     public playReload() 
     {
-        if(!this.effects.animations.skelAnimator.isPlaying("Reload"))
+        if(!this.isReloading()) // this.effects.animations.skelAnimator.isPlaying("Reload"))
         {
             if(this.totalAmmo > 0) 
+            {
+                this.decrementTotalAmmo();
+                const tammo = this._totalAmmo;
+                this.getUIAmmo = () => { return tammo; }
                 this.effects.animations.playReload();
+            }
             else 
             {
                 // TODO: play an out of ammo sound, perhaps a soft 'tink'

@@ -13,11 +13,8 @@ import { Relevancy } from "./Relevancy";
 
 export class MWorldState
 {
-    // readonly lookup = new Collections.Dictionary<string, MNetworkEntity>();
+
     readonly lookup = new Collections.Dictionary<string, MEntitySnapshot>();
-
-
-    // getPuppet : (ent : MNetworkEntity) => Puppet;
 
     ackIndex : number = -1;
 

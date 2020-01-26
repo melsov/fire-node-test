@@ -38,11 +38,13 @@ import * as MDetectNode from "../../../MDetectRunningInNode";
             _wantNullEngine ? : boolean
         )
         {
+            console.log(`MapPackage ctor`);
             this.canvas = GetCanvas(typeOfGame);
             this.engine = _wantNullEngine ? new NullEngine() : new Engine(this.canvas);
             this.scene = new Scene(this.engine);
 
             this.assetBook = new AssetBook(this.scene);
+            console.log(`END MapPackage ctor`);
         }
 
         LoadAll(callback : (mapPackage : MapPackage) => void) : void 

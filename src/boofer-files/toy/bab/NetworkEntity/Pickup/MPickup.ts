@@ -1,4 +1,4 @@
-import { Vector3, TransformNode } from "babylonjs";
+import { Vector3, TransformNode, MeshBuilder } from "babylonjs";
 import { MNetworkPlayerEntity } from "../MNetworkEntity";
 import { MByteUtils } from "../../../Util/MByteUtils";
 import { MapPackage, MeshFiles } from "../../MAssetBook";
@@ -57,17 +57,25 @@ export abstract class MPickup
 
     private setupMesh(position : Vector3, mapPackage : MapPackage) : void
     {
-        const meshTask = mapPackage.assetBook.getMeshTask(this.GetMeshName());
-        if(meshTask === undefined) throw new Error(`no loaded mesh data for ${this.GetMeshName()}`);
-        if(meshTask.task === undefined) throw new Error(`no mesh task for ${this.GetMeshName()}`);
-
-        meshTask.task.loadedMeshes.forEach((m) => {
-            // make a clone with root as parent
-            const clone = m.clone(`${this.GetItemTypeName()}-clone`, this.root);
-            if(clone) {
-                clone.setPositionWithLocalVector(Vector3.Zero());
-            }
+        // test mesh
+        const cube = MeshBuilder.CreateBox(`pickup`, {
+            size : 1.1
         });
+        cube.parent = this.root;
+        cube.setPositionWithLocalVector(Vector3.Zero());
+
+        // WANT
+        // const meshTask = mapPackage.assetBook.getMeshTask(this.GetMeshName());
+        // if(meshTask === undefined) throw new Error(`no loaded mesh data for ${this.GetMeshName()}`);
+        // if(meshTask.task === undefined) throw new Error(`no mesh task for ${this.GetMeshName()}`);
+
+        // meshTask.task.loadedMeshes.forEach((m) => {
+        //     // make a clone with root as parent
+        //     const clone = m.clone(`${this.GetItemTypeName()}-clone`, this.root);
+        //     if(clone) {
+        //         clone.setPositionWithLocalVector(Vector3.Zero());
+        //     }
+        // });
     }
 
     ToPkString() : string
@@ -133,7 +141,8 @@ export class MAmmoPickup extends MPickup
     GetItemTypeName() : string { return 'AmmoPickup'; }
     
     protected _apply(player: MNetworkPlayerEntity): void {
-        console.log(`pretending to apply pickup to ${player.netId}`);
+        player.playerPuppet.arsenal.equipped().addAmmo();
+        console.log(`pickup gave ammo ${player.netId}`);
     }
 
 }

@@ -15,6 +15,7 @@ import { MJumpCurve, JumpState } from "../helpers/MCurve";
 import * as MLoader from "./MAssetBook";
 import { MArsenal } from "./NetworkEntity/weapon/MArsenal";
 import { MParticleManager } from "../loading/MParticleManager";
+import { UIDebugBoolean } from "../html-gui/UIDebugBoolean";
 // import undefined = require("firebase/empty-import");
 
 const physicsNudgeDist : number = .01;
@@ -22,7 +23,7 @@ const collisionBlockMargin : number = .2; // large for debug
 
 export const DEBUG_SPHERE_DIAMETER : number = 2;
 export const PLAYER_GRAVITY : number = -3;
-export const MAX_HEALTH : number = 25;
+export const MAX_HEALTH : number = 31; // 5 health bits
 
 
 //TODO: (global) test running server on a headless chrome instance
@@ -62,8 +63,8 @@ export class MPlayerAvatar implements Puppet
     private didJumpStart : MFlopbackTimer = new MFlopbackTimer(5);
     private jumpCurve : MJumpCurve = new MJumpCurve(PLAYER_GRAVITY, 3);
 
-    private MAX_MULTI_JUMPS = 3;
-    private remainingJumps = 3;
+    private MAX_MULTI_JUMPS = 1;
+    private remainingJumps = 1;
 
     public moveSpeed : number =  .1;
     
@@ -74,6 +75,8 @@ export class MPlayerAvatar implements Puppet
     public readonly weaponRoot : TransformNode;
 
     private charMat : GridMaterial;
+
+    private debugGrounded : UIDebugBoolean = new UIDebugBoolean("dbg-grounded", "grounded", "#88FFAA", "#888888");
 
     constructor
     (
@@ -102,7 +105,9 @@ export class MPlayerAvatar implements Puppet
         this.fireRayHelper = new RayHelper(new Ray(new Vector3(), Vector3.Forward(), 0));
 
 
-        for(let i=0; i < this.headFeetCheckRays.length; ++i) { this.headFeetCheckRays[i] = new Ray(new Vector3(), new Vector3(), clearance * 3.1); } // debug shoudl be 1.1 not 3.1
+        for(let i=0; i < this.headFeetCheckRays.length; ++i) { 
+            this.headFeetCheckRays[i] = new Ray(new Vector3(), new Vector3(), clearance + 0.01); // debug shoudl be 1.1 not 3.1
+        } 
 
         this.arsenal = MArsenal.MakeDefault(mapPackage);
         this.weaponRoot = new TransformNode(`weaponRoot`, mapPackage.scene);
@@ -434,6 +439,11 @@ export class MPlayerAvatar implements Puppet
         this._grounded = false;
     }
 
+    private debugUpdateIndicators() : void
+    {
+        this.debugGrounded.setValue(this._grounded);
+    }
+
 
     private escapeBuriedInTerrain() : void 
     {
@@ -459,8 +469,12 @@ export class MPlayerAvatar implements Puppet
            // apply jump delta (but max() to protect against falling too fast)
             this.cliTarget.interpData.position.y += Math.max(PLAYER_GRAVITY / 2.0, this.jumpCurve.delta); 
 
-            if(this.grounded && this.jumpCurve.state === JumpState.DESCENDING) {
-                if(this.groundY + clearance > this.cliTarget.interpData.position.y) {
+            if(this.grounded && this.jumpCurve.state === JumpState.DESCENDING) 
+            {
+                // TODO: diagnose involuntary extra jumps, when we hold down space
+                // TODO: diagnose player stops chaining jumps, sometimes when space is held down
+                if(this.groundY + clearance > this.cliTarget.interpData.position.y) 
+                {
                     this.cliTarget.interpData.position.y = this.groundY + clearance;
                     this.jumpCurve.state = JumpState.NOT_JUMPING;
                     this.remainingJumps = this.MAX_MULTI_JUMPS;
@@ -471,10 +485,11 @@ export class MPlayerAvatar implements Puppet
     }
 
 
-    public jump() : void 
+    private jump() : void 
     {
         if((this.grounded  && this.jumpCurve.state === JumpState.NOT_JUMPING) || 
-            (this.remainingJumps > 0 && this.jumpCurve.normalizedCurvePosition > .35)) {
+            (this.remainingJumps > 0 && this.jumpCurve.normalizedCurvePosition > .35)) 
+        {
             this.remainingJumps--;
             this.jumpCurve.state = JumpState.ASCENDING;
         }
@@ -638,9 +653,9 @@ export class MPlayerAvatar implements Puppet
         return move;
     }
 
-    private makeNextTargetWithCollisions(cmd : CliCommand) : CliTarget
+    private makeNextTargetWithCollisions(cmd : CliCommand /*, consider_MakeMeStaticGCNeutral */) : CliTarget
     {
-        let nextTarget = this.cliTarget.clone();
+        const nextTarget = this.cliTarget.clone();
         nextTarget.timestamp = cmd.timestamp + ServerSimulateTickMillis;
         nextTarget.interpData.position.addInPlace(MPlayerAvatar.GetMove(cmd, this.moveSpeed));
         nextTarget.interpData.position = this.getRayCollisionAdjustedPos(nextTarget.interpData.position.clone());
@@ -663,8 +678,8 @@ export class MPlayerAvatar implements Puppet
     applyCommandServerSide(cmd : CliCommand) : void
     {
         // CONSIDER: could update cli target in place for gc smoothing
-        let target = this.makeNextTargetWithCollisions(cmd);
-        target.interpData.rotation = cmd.rotation.clone();
+        const target = this.makeNextTargetWithCollisions(cmd);
+        target.interpData.rotation.copyFrom(cmd.rotation); // = cmd.rotation.clone();
 
         // for now blind acceptance
         target.interpData.position.y = cmd.claimY;
@@ -686,22 +701,28 @@ export class MPlayerAvatar implements Puppet
 
     private debugJumpRepeatedly : boolean = false;
 
+    commandJump(cmd : CliCommand) : void
+    {
+        if(cmd.jump) {
+            this.jump();
+        }
+    }
     // cli controlled player
     pushCliTargetWithCommand(cmd : CliCommand) : void
     {
-        if(cmd.jump){
-            this.jump();
-        }
+        // if(cmd.jump){
+        //     this.jump();
+        // }
 
-        if(cmd.debugTriggerKey) {
-            this.debugJumpRepeatedly = !this.debugJumpRepeatedly;
-        }
-        if(this.debugJumpRepeatedly && this.jumpCurve.state === JumpState.NOT_JUMPING) {
-            this.jump();
-        }
+        // if(cmd.debugTriggerKey) {
+        //     this.debugJumpRepeatedly = !this.debugJumpRepeatedly;
+        // }
+        // if(this.debugJumpRepeatedly && this.jumpCurve.state === JumpState.NOT_JUMPING) {
+        //     this.jump();
+        // }
 
         this.lastCliTarget.copyFrom(this.cliTarget);
-        let next = this.makeNextTargetWithCollisions(cmd);
+        const next = this.makeNextTargetWithCollisions(cmd);
         this.cliTarget.copyFrom(next);
     }
 
@@ -722,6 +743,8 @@ export class MPlayerAvatar implements Puppet
 
         this.debugShowHitTimer.tick(dt / 1000.0);
         this.toggleFireIndicator(this.debugShowHitTimer.value);
+
+        this.debugUpdateIndicators();
     }
 
     // TODO: the server can't get accurate gravity behavior with a low resolution tick

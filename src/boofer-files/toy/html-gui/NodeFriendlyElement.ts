@@ -2,13 +2,22 @@
 export class NFStyle 
 {
     color : string = "";
+
+    //private _backgroundColor : string = "";
+    set backgroundColor(bcolor : string) {
+        //this._backgroundColor = bcolor;
+        if(this.sourceElement && this.sourceElement.style) {
+            this.sourceElement.style.backgroundColor = bcolor;
+        }
+    }
+
     fontSize : string = "";
     sourceElement : any | undefined;
 
-    private _display : string = "";
+    //private _display : string = "";
 
     set display(dstr : string) {
-        this._display = dstr;
+        // this._display = dstr;
         if(this.sourceElement && this.sourceElement.style) {
             this.sourceElement.style.display = dstr;
         }

@@ -1,7 +1,7 @@
 
 import * as firebase from 'firebase/app';
 import 'firebase/database'
-import  *  as initScript from './init';
+import * as initScript from './init';
 
 var firebaseConfig = {
     apiKey: "AIzaSyCR2r5RKhmfc9Lo3gKyUx4Ngy8l1S4rpts",

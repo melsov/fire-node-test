@@ -38,7 +38,7 @@ export class MLocalPeer
     // With match maker service, we will already know whether we're the server
     // at constructor invocation
     constructor(
-        room : string,
+        readonly room : string,
         user : tfirebase.FBUser,
         private readonly idToken : string,
         //public mapPackage : Nullable<MLoader.MapPackage>,
@@ -47,11 +47,16 @@ export class MLocalPeer
     { 
         this.debugRandomId = "" + Math.floor(Math.random() * 1000);
         this.debugStopWatch.name += this.debugRandomId;
-        // TODO: import a few things before connecting? well, we probably want to check their id in firebase? (or will want to in the future).
-        // so the importing / connecting process might want to interwoven more granularly
+
+        // TODO: import a few things before connecting? well, we probably want to check 
+        // their id in firebase? (or will want to in the future).
+        // so the importing / connecting process might want to be interwoven more granularly
 
         this.debugStopWatch.logLap(`constructor`);
         
+        // TODO: purge this byzantine callback structure--it's meaningless now since
+        // a firebase func decides who the server is. isServer is already known at this point
+
         this.lsRoomAgent = new ListenServerRoomAgent(room, user, (isServer : boolean) => {
             this.handleOnGotPlayerCount(isServer);
         });
@@ -61,44 +66,50 @@ export class MLocalPeer
         // DEEP THOUGHT: server creation and room creation should go hand-in-hand more...
         // so that we can't have a serverless room
         // server can't leave without destroying its room, etc.
-        if(MDetectNode.IsRunningInNode())
-        {
-            this.lsRoomAgent.debugWipeEntireFirebaseDB(() => {
-                this.lsRoomAgent.init(); // then init
-            });
-        } else {
-            this.lsRoomAgent.init();
-        }
+        // Or don't
+        // if(MDetectNode.IsRunningInNode())
+        // {
+        //     this.lsRoomAgent.debugWipeEntireFirebaseDB(() => {
+        //         this.lsRoomAgent.init(); // then init
+        //     });
+        // } else {
+        //     this.lsRoomAgent.init();
+        // }
+
+        this.lsRoomAgent.init();
         
     }
  
     private handleOnGotPlayerCount(isServer : boolean)
     {
-        // TODO: load assets
         // if(this.mapPackage === null)
         // {
             this.debugStopWatch.name += isServer ? "SRV" : "CLI";
             this.debugRandomId += isServer ? "SRV" : "CLI";
 
             // TODO: if node, must be a server. must have own room
-            // TODO: actually detect whether we're node or not node
             let isRunningInNode = MDetectNode.IsRunningInNode();
             console.log(`isRunningInNode: ${isRunningInNode}`);
-            if(isRunningInNode && !isServer) {
-                console.warn(`in node but not server. will **WIPE THE FIREBASE DB** and exit now`);
-                this.lsRoomAgent.debugWipeEntireFirebaseDB(() => {
-                    process.exit();
-                })
-                return;
+            if(isRunningInNode && !isServer) 
+            {
+                console.log(`hey we're a node client`);
+                // DONT WANT ANYMORE
+                // console.warn(`in node but not server. will **WIPE THE FIREBASE DB** and exit now`);
+                // this.lsRoomAgent.debugWipeEntireFirebaseDB(() => {
+                //     process.exit();
+                // })
+                // return;
             }
-            let wantNullEngine = isServer && (isRunningInNode || MUtils.QueryStringContains("NullEngine"));
-            console.log(`null engine ? ${wantNullEngine}`);
-            let mapPackage = new MLoader.MapPackage(MLoader.MapID.TheOnlyMap, isServer ? TypeOfGame.Server : TypeOfGame.ClientA, wantNullEngine);
+
+            const wantNullEngine = isRunningInNode || MUtils.QueryStringContains("NullEngine");
+            const mapPackage = new MLoader.MapPackage(MLoader.MapID.TheOnlyMap, isServer ? TypeOfGame.Server : TypeOfGame.ClientA, wantNullEngine);
+
             mapPackage.LoadAll((mpackage : MLoader.MapPackage) => {
                 
                 this.debugStopWatch.logLap(`loader-callback`);
 
                 if(isServer) {
+                    ListenServerRoomAgent.NodeLog(`is Server. will create server....`)
                     this.createServer(new GameMain(mpackage));
                 } else {
                     this.createClient(new GameMain(mpackage));
@@ -160,6 +171,12 @@ export class MLocalPeer
 
     private exitBeacon()
     {
+        if(MDetectNode.IsRunningInNode()) 
+        {
+            console.log(`trying to 'navigator.sendBeacon' but we're in node. (TODO: what do we actually want to do?)`);
+            return;
+        }
+
         console.log(`will call goodbye func`);
         console.log(`sending id token ${this.idToken}`);
         let goodbye = new GoodbyeData();
@@ -242,9 +259,14 @@ export class PreGameClient
     {
         if(!serverPeerRP || !this.welcomePackage) throw new Error(`no server peer or welcome package`);
 
-        let client = new MClient(this.lsRoomAgent.user, this.game, this.welcomePackage, this.lsRoomAgent.debugPlayerArrivalNumber, (msg : string) => {
-            serverPeerRP.peer.send(msg);
-        });
+        let client = new MClient(
+            this.lsRoomAgent.user, 
+            this.game, 
+            this.welcomePackage, 
+            this.lsRoomAgent.debugPlayerArrivalNumber, 
+            (msg : string) => {
+                serverPeerRP.peer.send(msg);
+            });
 
         serverPeerRP.peer.recExtraCallback = (uid : string, e : MessageEvent) => {
             if(client !== null)
