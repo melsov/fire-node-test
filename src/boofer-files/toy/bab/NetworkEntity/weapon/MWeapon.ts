@@ -123,12 +123,12 @@ export abstract class MAbstractWeapon
             this.handleReloadFinished();
         });
         
-        this._uiTotalAmmo = this._totalAmmo;
+        // this._uiTotalAmmo = this._totalAmmo;
     }
  
 
     // we think fireRate needs to be a multiple of the simulate tick rate
-    protected fireRateM : number = ServerSimulateTickMillis * 50;
+    protected fireRateM : number = 200;
     protected abstract get isAutomatic() : boolean;
 
     protected _totalAmmo : number = this.MaxAmmo(); 
@@ -177,9 +177,9 @@ export abstract class MAbstractWeapon
 
     public abstract keyAllowsFire(duh : KeyMoves.DownUpHold) : boolean;
     
-    public hasAmmoAndKeyAllowsFire(duh : KeyMoves.DownUpHold) : boolean {
-        return this.isAmmoInClip() && this.keyAllowsFire(duh);
-    }
+    // public hasAmmoAndKeyAllowsFire(duh : KeyMoves.DownUpHold) : boolean {
+    //     return this.isAmmoInClip() && this.keyAllowsFire(duh);
+    // }
     // end region could-would fire
 
 
@@ -248,9 +248,14 @@ export abstract class MVoluntaryWeapon extends MAbstractWeapon
 {
     private isTimeoutFinished : boolean = true;
     protected get isAutomatic() : boolean { return false; }
+    private edgeTrigger = new KeyMoves.KeyDownEdgeTrigger();
 
-    public keyAllowsFire(duh : KeyMoves.DownUpHold) : boolean { 
-        return this.isTimeoutFinished && duh === KeyMoves.DownUpHold.Down; 
+    public keyAllowsFire(duh : KeyMoves.DownUpHold) : boolean 
+    { 
+        return this.edgeTrigger.update(duh) && this.isTimeoutFinished;
+        // const dbugEdge = this.edgeTrigger.update(duh);
+        // const dbug = dbugEdge && this.isTimeoutFinished;
+        // return dbug;
     }
 
     protected _fire() : void 
@@ -260,6 +265,7 @@ export abstract class MVoluntaryWeapon extends MAbstractWeapon
         this.isTimeoutFinished = false;
         
         window.setTimeout(() => {
+            this.edgeTrigger.reset();
             this.isTimeoutFinished = true;
         }, this.fireRateM);
 

@@ -1,8 +1,3 @@
-// require firebase here?
-// import * as firebase from 'firebase/app';
-// import 'firebase/auth';
-// let nothing = firebase.firestore;
-// console.log(`${nothing}`);
 
 // Node definitions
 global.XMLHttpRequest = require('xhr2').XMLHttpRequest; 
@@ -41,12 +36,14 @@ if(!process.argv.includes('node-client'))
 
   console.log(`spin up express on ${PORT_EXPRESS}`);
  
-  app.get('/', (req, res) => { res.send('hi world'); });
+  app.get('/', (req, res) => { 
+    res.send('hi world'); 
+  });
   app.use(express.static('./'));
 
   app.listen(PORT_EXPRESS, () => {
     console.log(`listening on ${PORT_EXPRESS}`);
-  })
+  });
 
 }
 

@@ -34,14 +34,13 @@ export class ClientControlledPlayerEntity extends MNetworkPlayerEntity
     //
     // applying movement by updating cli targets and send data's position
     //
-    applyCliCommand(cliCommand : CliCommand) : void
+    ApplyCommandOnClientOwned(cliCommand : CliCommand) : void
     {
         this.playerPuppet.pushCliTargetWithCommand(cliCommand);
     } 
     
     createImmediateEffectsFromInput(cliCommand : CliCommand) : void
     {
-        // if(this.playerPuppet.arsenal.equipped().hasAmmoAndKeyAllowsFire(cliCommand.fire)) 
         if(this.playerPuppet.arsenal.equipped().keyAllowsFire(cliCommand.fire)) 
         {
             if(this.playerPuppet.arsenal.equipped().isAmmoInClip())

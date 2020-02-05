@@ -4,6 +4,7 @@ import { MLoadOut } from "./MPuppetMaster";
 import { InterpData } from "./NetworkEntity/MNetworkEntity";
 import * as KeyMoves from "./KeyMoves";
 import { UIDebugBoolean } from "../html-gui/UIDebugBoolean";
+import { MUtils } from "../Util/MUtils";
 
 
 export class CliCommand
@@ -39,7 +40,7 @@ class InputKeys
     back : boolean = false;
     right : boolean = false;
     left : boolean = false;
-    fire : KeyMoves.DownUpHold = KeyMoves.DownUpHold.StillUp;
+    fire = new KeyMoves.FloppableDownUpHold(); // : KeyMoves.DownUpHold = KeyMoves.DownUpHold.StillUp;
     jump : boolean = false;
 
     debugGoWrongPlace : boolean = false;
@@ -102,6 +103,7 @@ export class MPlayerInput
 
 
     private debugJumpKey : UIDebugBoolean = new UIDebugBoolean("dbg-jump-key", "jump-key", "#FFAAAA", "#999999");
+    private D_LMBState = new UIDebugBoolean("dbg-fire-state", "LMB", "#7777AA", "#666666");
 
     constructor(useAltKeySet : boolean)
     {
@@ -197,26 +199,35 @@ export class MPlayerInput
     {
         this.updateDebugIndicators();
 
-        // calc time since last call to this func
-        const now : number = +new Date();
-        const last : number = (this.lastGetAxesTime == undefined) ? now : this.lastGetAxesTime;
-        const dt : number = now - last;
-        this.lastGetAxesTime = now;
+        // *** NEW THOERY: no dt scaling on move inputs
+        // We don't need to scale by dt
+        // Because dt is (ideally, more or less, we hope) a constant
+        // (in any case, we are treating it as one)
+
+        // // calc time since last call to this func
+        const now : number = MUtils.DebugGetNowMillis(); // +new Date();
+        // const last : number = (this.lastGetAxesTime == undefined) ? now : this.lastGetAxesTime;
+        // const dt : number = now - last;
+        // this.lastGetAxesTime = now;
 
         let cc = new CliCommand();
 
         // when debugging with multiple canvases
         // we sometimes (seem to) miss key events
         // when canvases loses focus
-        if(now - this.lastKeyboardEventTime > KB_EVENT_TIMEOUT_MILLIS) {
-            // this._inputKeys.reset(); // <-- probably causes weird extra jumps?
-        }
+        // if(now - this.lastKeyboardEventTime > KB_EVENT_TIMEOUT_MILLIS) {
+        //     // this._inputKeys.reset(); // <-- probably causes weird extra jumps?
+        // }
 
-        cc.horizontal = (this._inputKeys.left ? -1 : (this._inputKeys.right ? 1 : 0)) * dt; // I FORGET: why scaling be dt here?
-        cc.vertical = (this._inputKeys.back ? -1 : (this._inputKeys.fwd ? 1 : 0)) * dt;
+        cc.horizontal = (this._inputKeys.left ? -1 : (this._inputKeys.right ? 1 : 0)); // * dt; // I FORGET: why scaling by dt here?
+        cc.vertical = (this._inputKeys.back ? -1 : (this._inputKeys.fwd ? 1 : 0)); // * dt;
         
-        cc.fire = this._inputKeys.fire;
-        this._inputKeys.fire = KeyMoves.Transition(this._inputKeys.fire); // move to next key state
+        cc.fire = this._inputKeys.fire.stateThisFrame(); // this._inputKeys.fire;
+
+        this._inputKeys.fire.reset();
+        this.D_LMBState.setValue(this._inputKeys.fire.stateThisFrame() <= KeyMoves.DownUpHold.Hold);
+
+        // this._inputKeys.fire = KeyMoves.Transition(this._inputKeys.fire); // move to next key state
 
         cc.debugTriggerKey = this.debugTriggerReady && this._inputKeys.debugGoWrongPlace;
 
@@ -240,7 +251,9 @@ export class MPlayerInput
         switch(ev.button)
         {
             case 0: // lmb
-                this._inputKeys.fire = KeyMoves.TransitionWithInput(this._inputKeys.fire, isDown); // types === PointerEventTypes.POINTERDOWN);
+                // this._inputKeys.fire = KeyMoves.TransitionWithInput(this._inputKeys.fire, isDown); // types === PointerEventTypes.POINTERDOWN);
+                this._inputKeys.fire.update(isDown);
+                this.D_LMBState.setValue(this._inputKeys.fire.stateThisFrame() <= KeyMoves.DownUpHold.Hold);
                 // WANT
                 // if(types === PointerEventTypes.POINTERDOWN)
                 // {

@@ -37,6 +37,7 @@ import { MEntitySnapshot } from "./MEntitySnapshot";
 import { MDetectNode } from "../../MDetectRunningInNode";
 
 import * as KeyMoves from "./bab/KeyMoves";
+import { DebugHudMaxValue } from "./html-gui/DebugHudMaxValue";
 
 
 
@@ -68,6 +69,27 @@ export function CommandFromString(str : string) : CliCommand
     return cmd;
 }
 
+// Object pool friendly helper
+export function ApplyStringToCommand(cmd : CliCommand, str : string)
+{
+    const j = <CliCommand> JSON.parse(str); // perverse
+    cmd.horizontal = j.horizontal;
+    cmd.vertical = j.vertical;
+    cmd.forward = BHelpers.Vec3FromJSON(j.forward)
+    cmd.rotation = BHelpers.Vec3FromJSON(j.rotation);
+    cmd.claimY = j.claimY;
+    cmd.fire = j.fire;
+    cmd.jump = j.jump;
+    cmd.debugTriggerKey = j.debugTriggerKey;
+    cmd.pickupClaimStr = j.pickupClaimStr;
+    cmd.inputSequenceNumber = j.inputSequenceNumber;
+    cmd.lastWorldStateAckPiggyBack = j.lastWorldStateAckPiggyBack;
+    cmd.debugPosRoAfterCommand = InterpData.FromJSON(cmd.debugPosRoAfterCommand);
+    cmd.timestamp = j.timestamp;
+    cmd.confirmHashes = j.confirmHashes;
+    cmd.loadOutRequest = j.loadOutRequest;
+}
+
 export class MClient
 {
 
@@ -83,6 +105,7 @@ export class MClient
 
     private debugHud : DebugHud;
     private debugHudInfo : DebugHud;
+    private debugCmdQLength = new DebugHudMaxValue('debugCMDQ');
 
     private debugDeltaUpdates = new UILabel("debugDeltaUpdates", "#33FF88");
 
@@ -191,7 +214,6 @@ export class MClient
             console.log(`set weapon root to: ${v}`);
             playerPuppet.debugSetWeaponRootPos(v);
         };
-        
 
         this.input.rightMouseToggle.callback = (isOn : boolean) => {
             this.fpsCam.toggleFOV(isOn);
@@ -276,6 +298,12 @@ export class MClient
             this.input.exitPointerLock(this.game.canvas, this.game.scene);
             this.requestLoadOutFunc = () => {};
             this.loop = this.chooseLoadOutRenderLoop;
+
+            // if we're a monkey client, 'click' the enter button
+            if(this.debugIsAMetronome) {
+                this.stageOfLifeType = StageType.DeadConfigureLoadout;
+                this.handleEnterGamePressed();
+            }
         }
         this.stageOfLifeType = next;
     }
@@ -359,7 +387,9 @@ export class MClient
         this.sampleInputTimer.tick(this.game.engine.getDeltaTime(), () => {
             this.processServerUpdates();
             if(this.gotFirstServerMessage)
+            {
                 this.processInputs();
+            }
 
             this.debugUpdateMetronomePosLabel();
         });
@@ -383,13 +413,13 @@ export class MClient
         // clearInterval(this.serverTickProcessHandle);
     }
 
-    private static MonkeyWanderRadius = 11;
+    private static MonkeyWanderRadius = 15;
     private static _MWRSq = MClient.MonkeyWanderRadius * MClient.MonkeyWanderRadius;
 
     private debugMonkeyClientInput() : CliCommand
     {
         const command = new CliCommand();
-        command.vertical = 1.0;
+        command.vertical = Math.random() > .8 ? 1.0 : 0.0;
 
         const pos = this.playerEntity.position;
         const distSq = MUtils.LengthXZSquared(pos); // ground dist from the origin
@@ -401,20 +431,12 @@ export class MClient
         {
             const circularFwd = Vector3.Cross(Vector3.Up(), pos).normalizeToNew();
             command.forward = circularFwd;
-            // const homing = distSq / MClient._MWRSq;
-            // const fwd = this.playerEntity.playerPuppet.mesh.forward;
-            // const turn = Vector3.Cross(fwd, Vector3.Up());
-            // turn.addInPlace(turn.scale(-2.0 * Math.random() * homing));
-            // turn.scaleInPlace(1 - 2 * Math.random() * homing);
-    
-            // command.forward = fwd.add(turn);
-            // command.forward.normalize();
         }
 
         command.jump = Math.random() > .99;
         command.fire = Math.random() < .01 ? KeyMoves.DownUpHold.StillUp : KeyMoves.DownUpHold.Down;
 
-        command.timestamp = +new Date();
+        command.timestamp = MUtils.DebugGetNowMillis(); // +new Date();
 
         return command;
     }
@@ -451,10 +473,10 @@ export class MClient
         //     return; 
         // }
 
-        if (this.clientSidePrediction.checked)
+        if (this.clientSidePrediction.checked) // it had better be. let's remove this condition?
         {
-            this.playerEntity.applyPredictionOnlyCommand(command);
-            this.playerEntity.applyCliCommand(command); // with collisions
+            this.playerEntity.applyPredictionOnlyCommand(command); // CONSIDER: wait this is kind of messed up?
+            this.playerEntity.ApplyCommandOnClientOwned(command); // with collisions
             this.playerEntity.createImmediateEffectsFromInput(command);
         }
 
@@ -502,10 +524,16 @@ export class MClient
         while(true)
         {
             let msg = this.fromServer.dequeue(); 
-            if(msg === null || msg === undefined || this.justIgnoreServer.checked)
+            if(msg === null || msg === undefined)
             {
                 break;
             }
+            if(this.justIgnoreServer.checked)
+            {
+                this.pendingInputs.length = 0; // polite
+                break;
+            }
+
             
             let comm = UnpackCommString(msg);
             switch(comm[0]) {
@@ -524,6 +552,7 @@ export class MClient
         if(!this.clientSidePrediction) { this.pendingInputs.splice(0, this.pendingInputs.length); } // just clear pending inputs (we shouldn't really need to do this...)
 
         this.debugHud.show(`pos: ${MUtils.RoundVecString((<MNetworkPlayerEntity>this.clientViewState.lookup.getValue(this.playerEntity.netId)).position)}`); //  this.user.UID)).position)}`);
+        this.debugCmdQLength.showWithMax(this.pendingInputs.length, `CMD Q len / max:`)
     }
     
     private processServerUpdate(msg : string) : void
@@ -669,19 +698,19 @@ export class MClient
             }
             
             this.debugCliDataBeforeReconciliation = this.playerEntity.lastAuthoritativeState.clone(); // getInterpData();
+
             //
             // server reconciliation
             // purge cli commands older than server update 
             // re-apply cli commands past the server update
             //
-
             if(this.serverReconciliation.checked && this.clientSidePrediction.checked)
             {
                 // reapply newer inputs
                 let j = 0;
                 while(j < this.pendingInputs.length)
                 {
-                    let input = this.pendingInputs[j]; 
+                    const input = this.pendingInputs[j]; 
                     if(input.inputSequenceNumber <= serverUpdate.lastInputNumber)
                     {
                         // server has already seen this input
@@ -690,7 +719,7 @@ export class MClient
                     else 
                     {   
                         // reapply inputs beyond what server has seen
-                        this.playerEntity.applyCliCommand(input);
+                        this.playerEntity.ApplyCommandOnClientOwned(input);
                         j++;
                     }
                 }

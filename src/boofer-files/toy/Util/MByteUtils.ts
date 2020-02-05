@@ -35,6 +35,13 @@ export class MByteUtils
         return result;
     }
 
+    static UpdateUint8sWithString(u8s : Uint8Array, str : string) : void
+    {
+        for(let i=0; i<str.length; ++i) {
+            u8s[i] = str.charCodeAt(i);
+        }
+    }
+
     static MaxConvertibleFloat : number = Math.pow(2, 23) - 1;
 
     static CanVecConvertReliably(v : Vector3) : boolean

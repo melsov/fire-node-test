@@ -14,9 +14,6 @@ export class DebugHud
         }
         this.container = _container;
 
-        //test
-        this.show("hi from debug hud");
-        console.log("***DBUGHUD****");
     }
 
     show(str : string) { this.container.innerText = str; }

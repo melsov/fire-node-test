@@ -20,6 +20,7 @@ import { UILabel } from "../../html-gui/UILabel";
 import { MapPackage } from "../MAssetBook";
 import { MEntitySnapshot, NonInterpolatedData } from "../../MEntitySnapshot";
 import { MRingPool } from "../../helpers/ObjectPool/MRingPool";
+import { MShortId } from "../../helpers/PoolReadyTypes/MShortId";
 
 export abstract class MNetworkEntity
 {
@@ -50,12 +51,12 @@ export abstract class MNetworkEntity
 
     public get netId() : string { return this._netId; }
 
-    // Server 
-    public abstract applyCliCommand (cliCommand : CliCommand) : void;
+    // Client controlled entity
+    public abstract ApplyCommandOnClientOwned (cliCommand : CliCommand) : void;
     
     public abstract teleport(pos : Vector3) : void;
 
-    public abstract stamp() : MEntitySnapshot;
+    public abstract stamp(snap : MEntitySnapshot) : void; // MEntitySnapshot;
     // public abstract applyDelta(delta : MNetworkEntity) : void;
 
     public abstract apply(update : MNetworkEntity) : void;
@@ -93,7 +94,7 @@ export abstract class MNetworkEntity
         // so just return one
         const interp = snap.interpData;
         const result = new MNetworkPlayerEntity(
-            snap.netId,
+            snap.netId.toString(),
             mapPackage,
             interp.getPosition(),
             interp.getRotation());
@@ -465,21 +466,38 @@ export class MNetworkPlayerEntity extends MNetworkEntity
     }
 
     
-    stamp() : MEntitySnapshot
+    stamp(snap : MEntitySnapshot) : void
     {
-        const nid = new NonInterpolatedData(
-            this.health.val,
-            this.playerPuppet.arsenal.getAmmos(),
-            this.transientStateBook.projectileHitsOnMe.length > 0,
-            this.transientStateBook.firedWeapon
-        );
-        const interp = this.playerPuppet.getInterpData();
-        return new MEntitySnapshot(
-            this.netId,
-            interp,
-            nid
-        );
+        snap.netId.setChars(this.netId);
+
+        snap.nonInterpData.health = this.health.val;
+        snap.nonInterpData.ammos = this.playerPuppet.arsenal.getAmmos();
+        snap.nonInterpData.wasProjectileHit = this.transientStateBook.projectileHitsOnMe.length > 0;
+        snap.nonInterpData.firedWeapon = this.transientStateBook.firedWeapon;
+
+        snap._interpData.position.copyFrom(this.playerPuppet.mesh.position);
+        snap._interpData.rotation.copyFrom(this.playerPuppet.mesh.rotation);
     }
+
+    // stamp() : MEntitySnapshot
+    // {
+    //     const shortId = new MShortId(); //don't really want
+    //     shortId.setChars(this.netId); 
+
+    //     const nid = new NonInterpolatedData(
+    //         this.health.val,
+    //         this.playerPuppet.arsenal.getAmmos(),
+    //         this.transientStateBook.projectileHitsOnMe.length > 0,
+    //         this.transientStateBook.firedWeapon
+    //     );
+    //     const interp = this.playerPuppet.getInterpData();
+
+    //     return new MEntitySnapshot(
+    //         shortId,
+    //         interp,
+    //         nid
+    //     );
+    // }
 
     cloneWithAuthStateOfOtherToInterpData() : MNetworkPlayerEntity
     {
@@ -670,10 +688,10 @@ export class MNetworkPlayerEntity extends MNetworkEntity
     // this would be simple enough if we knew there would never be head bumps...
     
     // nowhere (ClientControlledPE impl is used but not this impl)
-    public applyCliCommand (cliCommand : CliCommand) : void
+    public ApplyCommandOnClientOwned (cliCommand : CliCommand) : void
     {
-        this.playerPuppet.applyCommandServerSide(cliCommand);
         throw new Error('this will never happen');
+        //this.playerPuppet.applyCommandServerSide(cliCommand);
     }
  
     // server
@@ -779,7 +797,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         //     // this.lastAuthoritativeState.addInPlace(update.puppet.getInterpData());
         // } else 
         {
-            this.lastAuthoritativeState.copyFrom(update.getMutableInterpData());
+            this.lastAuthoritativeState.copyFrom(update._interpData); 
         }
     }
 
@@ -810,7 +828,7 @@ export class MNetworkPlayerEntity extends MNetworkEntity
         {
             const opi = FromToInterp(this.interpBuffer[0], this.interpBuffer[1], renderTimestamp);
             // let opi = FromToInterp(this.interpBuffer.at(0), this.interpBuffer.at(1), renderTimestamp);
-            let ct = new CliTarget();
+            const ct = new CliTarget();
             ct.interpData.copyFrom(opi.interpData);
             this.applyToPuppet(ct, true); 
 

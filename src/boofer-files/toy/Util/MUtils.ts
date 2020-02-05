@@ -3,6 +3,7 @@ import { BHelpers } from "../MBabHelpers";
 import { GridMaterial } from "babylonjs-materials";
 import { Set } from "typescript-collections";
 import { Float16Array, getFloat16, setFloat16, hfround } from "@petamoriken/float16";
+import { MDetectNode } from "../../../MDetectRunningInNode";
 
 const MEU : number = .001;
 
@@ -318,7 +319,16 @@ export class MUtils
         return MUtils.GetQueryStrings().some(x => x === param);
     }
 
-    
+    // In release builds, don't check if we're in node. since we never will be?
+    static DebugGetNowMillis() : number
+    {
+        if(MDetectNode.IsRunningInNode()) {
+            const hr = process.hrtime();
+            return (hr[0] * 1e9 + hr[1]) / 1e6;
+        }
+
+        return window.performance.now();
+    }
 
 }
 

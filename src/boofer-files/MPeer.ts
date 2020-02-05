@@ -101,7 +101,7 @@ export class MLocalPeer
                 // return;
             }
 
-            const wantNullEngine = isRunningInNode || MUtils.QueryStringContains("NullEngine");
+            const wantNullEngine = isServer && !MUtils.QueryStringContains("NoNullEngine"); 
             const mapPackage = new MLoader.MapPackage(MLoader.MapID.TheOnlyMap, isServer ? TypeOfGame.Server : TypeOfGame.ClientA, wantNullEngine);
 
             mapPackage.LoadAll((mpackage : MLoader.MapPackage) => {
@@ -131,7 +131,7 @@ export class MLocalPeer
         }
         this.lsRoomAgent.onChannelClosed = (rP : RemotePlayer) => {
             if(this.server != null) 
-                this.server.disconnect(rP.user);
+                this.server.disconnectUser(rP.user);
         }
 
         this.lsRoomAgent.handshake();
@@ -167,6 +167,9 @@ export class MLocalPeer
     {
         this.exitBeacon();
         this.lsRoomAgent.tearDown();
+        if(this.server) {
+            this.server.tearDown();
+        }
     }
 
     private exitBeacon()

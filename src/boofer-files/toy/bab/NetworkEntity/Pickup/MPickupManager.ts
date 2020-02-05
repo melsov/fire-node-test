@@ -74,7 +74,7 @@ export class MPickupManager
     // }
 
     // client
-    // let clients calculate possible pickups; (essentially, server is off loading some work)
+    // let clients calculate possible pickups; (essentially, server is off-loading some work)
     // use a simple radius. They can send a pickup claim to the server
     pickupClaimsString(playerPos : Vector3) : string | undefined
     {

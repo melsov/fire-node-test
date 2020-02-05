@@ -2,6 +2,7 @@ import { InterpData, ImmutableInterpdata } from "./bab/NetworkEntity/MNetworkEnt
 import { MByteUtils } from "./Util/MByteUtils";
 import { Vector3 } from "babylonjs";
 import { FireActionType } from "./bab/NetworkEntity/transient/MTransientStateBook";
+import { MShortId } from "./helpers/PoolReadyTypes/MShortId";
 
 // CONSIDER: we don't need a health and ammo update
 // in each update. e.g. every other would probably be 
@@ -13,12 +14,11 @@ import { FireActionType } from "./bab/NetworkEntity/transient/MTransientStateBoo
 export class NonInterpolatedData
 {
     constructor(
-        readonly health : number,
-        readonly ammos : [number, number], // two ammo amounts for primary and secondary weapons
-        readonly wasProjectileHit : boolean,
-        readonly firedWeapon : FireActionType
-    ) {
-    }
+        public health : number,
+        public ammos : [number, number], // two ammo amounts for primary and secondary weapons
+        public wasProjectileHit : boolean,
+        public firedWeapon : FireActionType
+    ) { }
 
     toByteString() : string
     {
@@ -59,19 +59,21 @@ export class NonInterpolatedData
 
 // TODO: handle transient state changes
 // optionally include e.g. projectile-hits-on-me
+
+// TODO: make netId (which is a short id right?) a fixed length (2 char) thing
+// in this way, formalize the byte length of the entire snapshot
+// so that it will be a (more) helpful object pool candidate (right?)
 export class MEntitySnapshot
 {
     constructor(
-        readonly netId : string,
-        private readonly _interpData : InterpData,
+        readonly netId : MShortId,
+        readonly _interpData : InterpData,
         readonly nonInterpData : NonInterpolatedData
     ) {}
 
     get interpData() : ImmutableInterpdata { return this._interpData; }
 
-    getMutableInterpData() : InterpData { return this._interpData; }
-
-    static SizeBytes() : number { return 2 + InterpData.SizeFloatBytes() + NonInterpolatedData.SizeBytes(); }
+    static SizeBytes() : number { return MShortId.LengthBytes + InterpData.SizeFloatBytes() + NonInterpolatedData.SizeBytes(); }
 
     toByteString() : string
     {
@@ -81,13 +83,18 @@ export class MEntitySnapshot
         return `${netidstr}${idstr}${nonintdstr}`;
     }
 
+    // TODO: change to provider style
+    // for use with an object pool
     static FromByteString(str : string) : MEntitySnapshot
     {
         const netidstr = str.substr(0, 2);
         const intdstr = str.substr(2, InterpData.SizeFloatBytes());
         const nonintdstr = str.substr(2 + InterpData.SizeFloatBytes(), NonInterpolatedData.SizeBytes());
+
+        const shortId = new MShortId(); // don't really want to do this
+        shortId.setChars(netidstr);
         return new MEntitySnapshot(
-            netidstr,
+            shortId,
             InterpData.FromByteString(intdstr),
             NonInterpolatedData.FromByteString(nonintdstr)
         );

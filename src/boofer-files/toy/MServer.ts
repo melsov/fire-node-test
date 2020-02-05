@@ -41,17 +41,20 @@ import { stat } from "fs";
 import { MDeleteManager } from "./MDeleteManager";
 import { MPingAlive } from "../MPingAlive";
 import { MUIButton } from "./html-gui/MUIButton";
+import { DTimerBook } from "../../debug-tools/DTimerBook";
+import * as PoolFuncs from "./helpers/ObjectPool/MInstantiatePoolFunctions";
+import { DebugHudMaxValue } from "./html-gui/DebugHudMaxValue";
 
 
 const debugElem : HTMLDivElement = <HTMLDivElement> document.getElementById("debug");
 
-export const ServerSimulateTickMillis : number = 10;
+export const ServerSimulateTickMillis : number = 420; // 420 == fake test // guess: ~8 user input samples per second is ok?
 export const ServerBroadcastTickMillis : number = 500;
 // export const InterpolationRewindMillis : number = ServerBroadcastTickMillis * 2;
 
 const ServerRecalcPingTickMillis : number = 40;
 
-export const MillisPerExpandedSeconds : number = 700; // a bit longer than standard seconds
+export const MillisPerExpandedSeconds : number = 700; // should be a bit longer than standard seconds
 export const AwaitRespawnExpandedSeconds : number = 4;
 
 export const CLOSE_BY_RELEVANT_RADIUS : number = 4; // silly small for testing
@@ -280,18 +283,20 @@ export class MServer
         this.welcomePackages.setValue(remotePlayer, new WelcomePackage(shortId));
 
         this.debugAddAShadowPlayer(netPlayer.netId);
+
+        this.DtimerBook.addNote(`ADDED PLAYER: <${shortId}>`);
     }
 
     private debugAddAShadowPlayer(origNetId : string) : void 
     {
-        let shNetId = origNetId;
+       /*let shNetId = origNetId;
         let shplayer = new MNetworkPlayerEntity(shNetId, this.game.mapPackage);
         let shpuppet = new MPlayerAvatar(Vector3.Zero(), shNetId, this.game.mapPackage);
 
         this.debugShadowState.lookup.setValue(shplayer.netId, shplayer);
 
         shpuppet.setCharacterColor(new Color3(.5, 1, .8), Color3.White());
-
+        */
     }
 
     private spamWelcomePackages() 
@@ -319,7 +324,7 @@ export class MServer
     }
 
 
-    public disconnect(fuser : tfirebase.FBUser) : void
+    public disconnectUser(fuser : tfirebase.FBUser) : void
     {
         // console.log(`DISCONNECT: ${fuser.UID}`);
         // let cli = this.clients.getValue(fuser.UID);
@@ -347,10 +352,17 @@ export class MServer
         });
     }
 
+    private DtimerBook = new DTimerBook();
+    private DtimerMaxCmds = new DebugHudMaxValue("DTimerMaxCmds", 2, 8, true);
+
     
     private renderLoopTick() : void 
     {
-        this.simulateTimer.tick(this.game.engine.getDeltaTime(), ()=> {
+        // TODO: fps counter 
+        // think of ways to pare down what the server does.
+        // so that we can isolate bottlenecks (especially when >3 players)
+        this.simulateTimer.tick(this.game.engine.getDeltaTime(), () => {
+            this.DtimerBook.start("simulate");
             // this.EnqueueIncomingCliCommands();
 
             this.processCliCommands();
@@ -358,10 +370,16 @@ export class MServer
             // this.debugDoTestFire();
             // this.debugPutShadowsInRewindState();
             this.pickupManager.recycle();
+
+            this.DtimerBook.end("simulate");
+            this.DtimerMaxCmds.showWithMax(this.DtimerBook.getLastTime('simulate'), "simulate times");
         });
         
         
         this.broadcastTimer.tick(this.game.engine.getDeltaTime(), () => {
+
+            this.DtimerBook.start("broadcast");
+
             this.spamWelcomePackages();
             // old update
             // this.processCliCommands();
@@ -372,23 +390,49 @@ export class MServer
             // this.handleDeletes();
             this.checkUnresponsiveClients();
             this.handleDeletables();
+
+            this.DtimerBook.end("broadcast");
             
         });
 
         // ping recalc
         this.recalcPingTimer.tick(this.game.engine.getDeltaTime(), () => {
+            this.DtimerBook.start("ping-recalc");
+
             this.clients.forEach((user, cli) => {
                 cli.pingGauge.recomputeAverage();
                 if(cli.pingGauge.average > 0) // at least?
                     cli.roundTripMillis = cli.pingGauge.average;
             });
+
+            this.DtimerBook.end("ping-recalc");
         });
        
     }
 
+    private DLogTimeBook()
+    {
+        this.DtimerBook.log();
+        this.DtimerBook.saveIfNode(`E:\\dev\\fire-node-test\\timings\\viewer\\reports\\dtimerbook.json`);
+    }
+
+    private cliCmdPool = PoolFuncs.InstantiateServerCmdQueueFunc.Instantiate();
+
+    // UNRELATED: old iMac etc. should be able to run the node version of a client?
+    // TODO: hard look at confirm messages (can we separate them from cli commands?)
+    //  or at least provide a cmd length param (so that variable length of confirms can shrink)
+    // TODO: related to the above todo, ditch JSON.parse. entire command packed into a byte array
+
+    // Seems like having a CliCommand type makes sense? 
+    // Propose types: MOVE-JUMP-FIRE (i.e. the normal kind), MINIMAL (just an input seq number),
+    // CONFIRM HASH, LOAD_OUT_REQUEST (but load out req shouldn't be part of command anyway)
+
     public handleClientMessage(uid : string, msg : string) : void
     {
-        this.cmdQueue.enqueue(new QueuedCliCommand(MCli.CommandFromString(msg), uid, +new Date()));
+        const cmd = this.cliCmdPool.next();
+        MCli.ApplyStringToCommand(cmd, msg);
+        this.cmdQueue.enqueue(new QueuedCliCommand(cmd, uid, MUtils.DebugGetNowMillis()));
+        // this.cmdQueue.enqueue(new QueuedCliCommand(MCli.CommandFromString(msg), uid, MUtils.DebugGetNowMillis()));
     }
 
 
@@ -472,6 +516,8 @@ export class MServer
                 }
 
                 // player loadout request
+                // ACTUALLY: do we want players to be able to switch load outs 
+                // during a match? (no way!)
                 if(qcmd.cmd.loadOutRequest && cli.canRespawn
                     && (cli.loadOut === null)
                     //  || MLoadOut.GetHash(cli.loadOut) !== MLoadOut.GetHash(qcmd.cmd.loadOutRequest) ||
@@ -822,6 +868,7 @@ export class MServer
         this.debugHud.text = str;
     }
 
+    // Get rewind settings (how many millis to go back to) from user interface settings 
     public static DebugGetRewindConfig() : DebugRewindConfig
     {
         return new DebugRewindConfig(
@@ -860,6 +907,9 @@ export class MServer
         }
     }
 
+    // move me 
+    private snapshotPool = PoolFuncs.InstantiateSnapshotPoolFunc.Instantiate();
+
     // shift an old state out of the state buffer, if buffer is max len
     // create a new MWorldState and push it to the state buffer
     // clone the current state to the new state
@@ -869,7 +919,7 @@ export class MServer
         // this.debugPushShadowState(); // WANT
 
         // this.stateBuffer.pushACloneOf(this.currentState); /// OLD
-        this.stateBuffer.push(this.currentState.stamp());
+        this.stateBuffer.push(this.currentState.stamp( () => { return this.snapshotPool.next(); } ));
         // this.currentState.ackIndex++; // OLD
         
         // WANT
@@ -1113,10 +1163,18 @@ export class MServer
         if(this.clients.keys().length === 0) {
             
             console.log(`Server bids you adieu.`);
+
+            this.tearDown(); // TODO: organize the tear down routine better (we wish server was notified for all teardown scenarios)
+
             //this.peer.lsRoomAgent.onDisconnect();
             // do the right thing to wipe the firebase record of the room entirely
             process.exit();
         }
+    }
+
+    tearDown() 
+    {
+        this.DLogTimeBook();
     }
 
 }

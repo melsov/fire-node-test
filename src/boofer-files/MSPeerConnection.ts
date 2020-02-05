@@ -225,7 +225,7 @@ export class MSPeerConnection
         try 
         {
             if(this.sendChannel.readyState === 'open') {
-                this. sendChannel.send(s);
+                this.sendChannel.send(s);
                 return true;
             }
             else 

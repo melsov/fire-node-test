@@ -90,14 +90,17 @@ export class ServerSideEntityManager extends MEntityManager
         });
     }
 
-    stamp() : MWorldState
+    stamp(snapProvider : () => MEntitySnapshot) : MWorldState
     {
         const ws = new MWorldState();
         const keys = this.lookup.keys();
         const ents = this.lookup.values();
+
         for(let i=0; i<keys.length; ++i)
         {
-            ws.lookup.setValue(keys[i], ents[i].stamp());
+            const snap = snapProvider();
+            ents[i].stamp(snap);
+            ws.lookup.setValue(keys[i], snap); // ents[i].stamp());
         }
         return ws;
     }

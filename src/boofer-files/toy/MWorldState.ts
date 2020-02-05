@@ -56,8 +56,8 @@ export class MWorldState
         {
             // console.log(jray[i]);
             // let jEnt = JSON.parse(jray[i]);
-            let ent = MEntitySnapshot.FromByteString(jray[i]); // jEnt); // MNetworkEntity.fromJSON(jEnt);
-            ws.lookup.setValue(ent.netId, ent);
+            let snap = MEntitySnapshot.FromByteString(jray[i]); // jEnt); // MNetworkEntity.fromJSON(jEnt);
+            ws.lookup.setValue(snap.netId.toString(), snap);
         }
     }
 
