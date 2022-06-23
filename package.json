@@ -10,7 +10,7 @@
     "babylonjs-materials": "^4.0.3",
     "express": "^4.17.1",
     "firebase": "^6.6.2",
-    "jsdom": "^15.2.0",
+    "jsdom": "^16.5.0",
     "progressbar.js": "^1.1.0",
     "typescript-collections": "^1.3.2",
     "wrtc": "^0.4.2",
