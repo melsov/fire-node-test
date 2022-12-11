@@ -8,7 +8,7 @@
     "babylonjs-gui": "^4.0.3",
     "babylonjs-loaders": "^4.0.3",
     "babylonjs-materials": "^4.0.3",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "firebase": "^6.6.2",
     "jsdom": "^15.2.0",
     "progressbar.js": "^1.1.0",
